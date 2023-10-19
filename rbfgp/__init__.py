@@ -1,0 +1,1 @@
+from .mfrbfgp import RBFboostedGP

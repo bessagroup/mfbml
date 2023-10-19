@@ -15,7 +15,7 @@ setup(
     description=DESCRIPTION,
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
-    packages=find_packages(),
+    packages=find_packages('src'),
     readme="README.md",
     install_requires='',
     keywords=['python', 'radial basis function', 'gaussian process'],
