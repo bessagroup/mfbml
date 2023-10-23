@@ -3,26 +3,22 @@ from typing import Any, Tuple
 
 import numpy as np
 from mfpml.models.kernels import RBF
-from mfpml.models.rbf import NoiseRBFSurrogate
+from mfpml.models.rbf import RBFSurrogate
 from scipy.linalg import cholesky, solve
 from scipy.optimize import minimize
 
 
-class RBFGaussianProcess:
+class RBFKriging:
     def __init__(
         self,
         design_space: np.ndarray,
         optimizer: Any = None,
         kernel: Any = None,
-        noise_prior: float = None,
     ) -> None:
 
         self.bounds = design_space
         self.optimizer = optimizer
         self.num_dim = design_space.shape[0]
-
-        # get the noise level
-        self.noise = noise_prior
 
         # define kernel
         if kernel is None:
@@ -31,15 +27,10 @@ class RBFGaussianProcess:
             self.kernel = kernel
 
         # define the lf model
-        if noise_prior is None:
-            self.lf_model = NoiseRBFSurrogate(design_space=self.bounds,
-                                              noise_std=0.1)
-        else:
-            self.lf_model = NoiseRBFSurrogate(design_space=self.bounds,
-                                              noise_std=self.noise)
+        self.lf_model = RBFSurrogate(design_space=self.bounds)
 
     def train(self, samples: dict, responses: dict) -> None:
-        """Train the hierarchical gaussian process model
+        """Train the hierarchical Kriging model
 
         Parameters
         ----------
@@ -105,50 +96,24 @@ class RBFGaussianProcess:
                 / self.f.T.dot(self.KF)
             )
             std = np.sqrt(np.maximum(mse, 0)).reshape(-1, 1)
-            # epistemic uncertainty
-            self.epistemic = std
-
-            # total uncertainty
-            total_unc = np.sqrt(std**2 + self.noise**2)
-            return fmean, total_unc
+            return fmean, std
 
     def _optHyp(self) -> None:
-        if self.noise is None:
-            # noise value needs to be optimized
-            lower_bound_theta = self.kernel._get_low_bound
-            upper_bound_theta = self.kernel._get_high_bound
-            # set up the bounds for noise sigma
-            lower_bound_sigma = 1e-5
-            upper_bound_sigma = 10
-            # set up the bounds for the hyper-parameters
-            lower_bound = np.hstack((lower_bound_theta, lower_bound_sigma))
-            upper_bound = np.hstack((upper_bound_theta, upper_bound_sigma))
-            # bounds for the hyper-parameters
-            hyper_bounds = np.vstack((lower_bound, upper_bound)).T
-            # number of hyper-parameters
-            num_hyper = self.kernel._get_num_para + 1
-        else:
-            lower_bound = self.kernel._get_low_bound
-            upper_bound = self.kernel._get_high_bound
-            # bounds for the hyper-parameters
-            hyper_bounds = np.vstack((lower_bound, upper_bound)).T
-            # number of hyper-parameters
-            num_hyper = self.kernel._get_num_para
 
         if self.optimizer is None:
             n_trials = 5
             opt_fs = float("inf")
             for _ in range(n_trials):
                 x0 = np.random.uniform(
-                    lower_bound,
-                    upper_bound,
-                    num_hyper,
+                    self.kernel._get_low_bound,
+                    self.kernel._get_high_bound,
+                    self.kernel._get_num_para,
                 )
                 optRes = minimize(
                     self._logLikelihood,
                     x0=x0,
                     method="L-BFGS-B",
-                    bounds=hyper_bounds,
+                    bounds=self.kernel._get_bounds_list,
                 )
                 if optRes.fun < opt_fs:
                     opt_param = optRes.x
@@ -156,8 +121,8 @@ class RBFGaussianProcess:
         else:
             optRes, _, _ = self.optimizer.run_optimizer(
                 self._logLikelihood,
-                num_dim=num_hyper,
-                design_space=hyper_bounds,
+                num_dim=self.kernel._get_num_para,
+                design_space=self.kernel._get_bounds,
             )
             opt_param = optRes["best_x"]
         self.opt_param = opt_param
@@ -165,23 +130,15 @@ class RBFGaussianProcess:
     def _logLikelihood(self, params):
 
         params = np.atleast_2d(params)
-        num_params = params.shape[1]
         nll = np.zeros(params.shape[0])
 
         for i in range(params.shape[0]):
-
             # for optimization every row is a parameter set
-            if self.noise is None:
-                param = params[i, 0: num_params - 1]
-                noise_sigma = params[i, -1]
-            else:
-                param = params[i, :]
-                noise_sigma = self.noise
-
+            param = params[i, :]
             # calculate the covariance matrix
             K = self.kernel(self.sample_xh_scaled,
                             self.sample_xh_scaled,
-                            param) + noise_sigma**2 * np.eye(self._num_xh)
+                            param)
             L = cholesky(K, lower=True)
             # Step 1: estimate beta, which is the coefficient of basis function
             # f, basis function
@@ -212,16 +169,8 @@ class RBFGaussianProcess:
     def _update_parameters(self) -> None:
         """Update parameters of the model"""
         # update parameters with optimized hyper-parameters
-        if self.noise is None:
-            self.noise = self.opt_param[-1]
-            self.kernel.set_params(self.opt_param[:-1])
-        else:
-            self.kernel.set_params(self.opt_param)
-        # get the kernel matrix
         self.K = self.kernel.get_kernel_matrix(
-            self.sample_xh_scaled, self.sample_xh_scaled) + \
-            self.noise**2 * np.eye(self._num_xh)
-
+            self.sample_xh_scaled, self.sample_xh_scaled)
         self.L = cholesky(self.K, lower=True)
 
         # step 1: get the optimal beta

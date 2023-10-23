@@ -1,1 +1,2 @@
-from .mfrbfgp import RBFboostedGP
+from .mfrbfgp import RBFGaussianProcess
+from .mfrbfkriging import RBFKriging

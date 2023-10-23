@@ -2,12 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mfpml.design_of_experiment.multifidelity_samplers import MFSobolSequence
 from mfpml.models.kernels import RBF
-from mfpml.problems.multifidelity_functions import Forrester_1c
+from mfpml.problems.multifidelity_functions import Forrester_1b
 
-from rbfgp import RBFboostedGP
+from rbfgp.mfrbfkriging import RBFKriging
 
 # define function
-func = Forrester_1c()
+func = Forrester_1b()
 
 # define sampler
 sampler = MFSobolSequence(design_space=func.design_space, seed=1)
@@ -23,14 +23,13 @@ test_hy = func.hf(test_x)
 test_ly = func.lf(test_x)
 
 # define kernel
-kernel = RBF(theta=np.zeros(1), bounds=[-2, 2])
-model = RBFboostedGP(design_space=func.input_domain, kernel=kernel)
+kernel = RBF(theta=np.zeros(1), bounds=[-1, 2])
+model = RBFKriging(design_space=func.input_domain, kernel=kernel)
 model.train(samples=sample_x, responses=sample_y)
 pred_y, pred_std = model.predict(x_predict=test_x, return_std=True)
 # get prediction of low fidelity
 pred_ly = model.predict_lf(test_xl=test_x)
-print(model.beta)
-print(model.kernel.param)
+
 # plot
 fig, ax = plt.subplots()
 ax.plot(sample_x['hf'], sample_y['hf'], 'x', label='samples')
@@ -40,7 +39,7 @@ ax.plot(test_x, test_ly, label='lf true')
 ax.plot(test_x, pred_ly, label='lf prediction')
 ax.plot(sample_x['lf'], sample_y['lf'], 'x', label='lf samples')
 ax.fill_between(test_x.flatten(),
-                (pred_y-2*pred_std).flatten(),
+                (pred_y-2 * pred_std).flatten(),
                 (pred_y+2*pred_std).flatten(),
                 alpha=0.5, label='CI interval')
 plt.legend()
