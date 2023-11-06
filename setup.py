@@ -7,11 +7,11 @@ basis function surrogate as low-fidelity trend function '
 
 # Setting up
 setup(
-    name="rbfgp",
+    name="mfbml",
     version=VERSION,
     author="Jiaxiang Yi (Delft University of Technology)",
     author_email="<J.Yi@tudelft.nl>",
-    url='https://github.com/JiaxiangYi96/rbfgp.git',
+    url='https://github.com/JiaxiangYi96/mfbml.git',
     description=DESCRIPTION,
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,

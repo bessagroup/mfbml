@@ -8,7 +8,7 @@ from scipy.linalg import cholesky, solve
 from scipy.optimize import minimize
 
 
-class RBFGaussianProcess:
+class MFRBFGPR:
     def __init__(
         self,
         design_space: np.ndarray,

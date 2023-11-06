@@ -8,7 +8,7 @@ from mfpml.problems.multifidelity_functions import (mf_Hartman3, mf_Hartman6,
                                                     mf_Sixhump)
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-from rbfgp import RBFboostedGP
+from mfbml import RBFboostedGP
 
 # define function
 func = mf_Hartman3()

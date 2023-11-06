@@ -4,7 +4,7 @@ from mfpml.design_of_experiment.multifidelity_samplers import MFSobolSequence
 from mfpml.models.kernels import RBF
 from mfpml.problems.multifidelity_functions import Forrester_1c
 
-from rbfgp.mfrbfgp import RBFGaussianProcess
+from mfbml.mfrbfgp import MFRBFGPR
 
 # define function
 func = Forrester_1c()
@@ -28,7 +28,7 @@ test_ly = func.lf(test_x)
 
 # define kernel
 kernel = RBF(theta=np.zeros(1), bounds=[-1, 2])
-model = RBFGaussianProcess(
+model = MFRBFGPR(
     design_space=func.input_domain, kernel=kernel, noise_prior=0.3)
 model.train(samples=sample_x, responses=sample_y)
 pred_y, pred_std = model.predict(x_predict=test_x, return_std=True)

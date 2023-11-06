@@ -4,7 +4,7 @@ from mfpml.design_of_experiment.multifidelity_samplers import MFSobolSequence
 from mfpml.models.kernels import RBF
 from mfpml.problems.multifidelity_functions import Forrester_1b
 
-from rbfgp.mfrbfkriging import RBFKriging
+from mfbml.mfrbfkriging import MFRBFKriging
 
 # define function
 func = Forrester_1b()
@@ -24,7 +24,7 @@ test_ly = func.lf(test_x)
 
 # define kernel
 kernel = RBF(theta=np.zeros(1), bounds=[-1, 2])
-model = RBFKriging(design_space=func.input_domain, kernel=kernel)
+model = MFRBFKriging(design_space=func.input_domain, kernel=kernel)
 model.train(samples=sample_x, responses=sample_y)
 pred_y, pred_std = model.predict(x_predict=test_x, return_std=True)
 # get prediction of low fidelity
