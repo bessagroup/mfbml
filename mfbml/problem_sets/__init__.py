@@ -1,0 +1,1 @@
+from .noiseless_problems import register_problem
