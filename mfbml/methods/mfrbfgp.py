@@ -33,7 +33,7 @@ class MFRBFGPR:
         # define the lf model
         if noise_prior is None:
             self.lf_model = NoiseRBFSurrogate(design_space=self.bounds,
-                                              noise_std=0.1)
+                                              noise_std=0.3)
         else:
             self.lf_model = NoiseRBFSurrogate(design_space=self.bounds,
                                               noise_std=self.noise)
@@ -118,7 +118,7 @@ class MFRBFGPR:
             lower_bound_theta = self.kernel._get_low_bound
             upper_bound_theta = self.kernel._get_high_bound
             # set up the bounds for noise sigma
-            lower_bound_sigma = 1e-5
+            lower_bound_sigma = 1e-2
             upper_bound_sigma = 10
             # set up the bounds for the hyper-parameters
             lower_bound = np.hstack((lower_bound_theta, lower_bound_sigma))
@@ -203,8 +203,8 @@ class MFRBFGPR:
                             gamma) / self._num_xh
 
             # step 3: calculate the log likelihood
-            logp = -0.5 * self._num_xh * \
-                np.log(sigma2) - np.sum(np.log(np.diag(L)))
+            logp = -0.5 * self._num_xh * sigma2 - np.sum(np.log(np.diag(L)))
+
             nll[i] = -logp.ravel()
 
         return nll
@@ -243,7 +243,7 @@ class MFRBFGPR:
                              self.gamma) / self._num_xh
 
         # step 3: get the optimal log likelihood
-        self.logp = (-0.5 * self._num_xh * np.log(self.sigma2) -
+        self.logp = (-0.5 * self._num_xh * self.sigma2 -
                      np.sum(np.log(np.diag(self.L)))).item()
 
     def _update_optimizer_hf(self, optimizer: Any) -> None:
