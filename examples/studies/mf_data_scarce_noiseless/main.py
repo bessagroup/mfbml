@@ -49,7 +49,7 @@ def create_experiment_data() -> None:
     seed_sets = [i for i in range(1, 11)]
 
     # define the number of lf samples
-    num_lf_sample = [10*i for i in range(1, 21)]
+    num_lf_sample = [20 + 5*i for i in range(1, 21)]
     num_hf_sample = [2*i for i in range(1, 11)]
 
     # create design variables
@@ -161,7 +161,7 @@ def run_method(method_name: str,
     model.train(samples=sample_x, responses=sample_y)
     pred_y = model.predict(x_predict=test_x['hf'], return_std=False)
     end_time = time.time()
-    print('prediction time: ', end_time - start_time)
+    # print('prediction time: ', end_time - start_time)
     cpu_time = end_time - start_time
     # accuracy test
     mae = mean_absolute_error(func.hf(test_x['hf']), pred_y)
@@ -258,7 +258,7 @@ def execute_experimentdata() -> None:
         filename='exp_{}'.format('mfbml'))
     # run the function
     data.evaluate(MFBMLExperiments(), mode='cluster')
-    data.store(filename='exp_{}'.format('mfbml'))
+    # data.store(filename='exp_{}'.format('mfbml_results'))
 
 
 def main() -> None:
@@ -268,7 +268,7 @@ def main() -> None:
         create_experiment_data()
         execute_experimentdata()
     elif f3dasm.HPC_JOBID > 0:
-        sleep(f3dasm.HPC_JOBID)
+        sleep(3*f3dasm.HPC_JOBID)
         execute_experimentdata()
 
 

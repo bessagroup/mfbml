@@ -141,7 +141,7 @@ def run_method(
     model.train(sample_x=sample_x["hf"], sample_y=sample_y["hf"])
     pred_y = model.predict(x_predict=test_x['hf'], return_std=False)
     end_time = time.time()
-    print('prediction time: ', end_time - start_time)
+    # print('prediction time: ', end_time - start_time)
     cpu_time = end_time - start_time
     # accuracy test
     mae = mean_absolute_error(func.hf(test_x['hf']), pred_y)
@@ -233,7 +233,7 @@ def execute_experimentdata() -> None:
         filename='exp_{}'.format('kriging'))
     # run the function
     data.evaluate(MFBMLExperiments(), mode='cluster')
-    data.store(filename='exp_{}'.format('kriging'))
+    # data.store(filename='exp_{}'.format('kriging'))
 
 
 def main() -> None:
@@ -243,7 +243,7 @@ def main() -> None:
         create_experiment_data()
         execute_experimentdata()
     elif f3dasm.HPC_JOBID > 0:
-        sleep(f3dasm.HPC_JOBID)
+        sleep(3*f3dasm.HPC_JOBID)
         execute_experimentdata()
 
 

@@ -3,7 +3,7 @@
 
 #PBS -N kriging
 #PBS -q mse
-#PBS -l nodes=1:ppn=8
+#PBS -l nodes=1:ppn=12
 #PBS -o out.$PBS_JOBID
 #PBS -e err.$PBS_JOBID
 #PBS -M J.Yi@tudelft.nl
@@ -24,7 +24,7 @@ cd $PBS_O_WORKDIR
 
 # Here is where the application is started on the node
 # activating my conda environment:
-source activate f3dasm
+source activate MLenv3
 
 
  # limiting number of threads
