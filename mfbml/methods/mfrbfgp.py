@@ -4,7 +4,7 @@ from typing import Any, Tuple
 import numpy as np
 from mfpml.models.kernels import RBF
 from mfpml.models.rbf import NoiseRBFSurrogate
-from scipy.linalg import cholesky, solve
+from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
 
 
@@ -13,12 +13,14 @@ class MFRBFGPR:
         self,
         design_space: np.ndarray,
         optimizer: Any = None,
+        optimizer_restart: int = 0,
         kernel: Any = None,
         noise_prior: float = None,
     ) -> None:
 
         self.bounds = design_space
         self.optimizer = optimizer
+        self.optimizer_restart = optimizer_restart
         self.num_dim = design_space.shape[0]
 
         # get the noise level
@@ -136,7 +138,7 @@ class MFRBFGPR:
             num_hyper = self.kernel._get_num_para
 
         if self.optimizer is None:
-            n_trials = 5
+            n_trials = self.optimizer_restart + 1
             opt_fs = float("inf")
             for _ in range(n_trials):
                 x0 = np.random.uniform(
@@ -182,7 +184,7 @@ class MFRBFGPR:
             K = self.kernel(self.sample_xh_scaled,
                             self.sample_xh_scaled,
                             param) + noise_sigma**2 * np.eye(self._num_xh)
-            L = cholesky(K, lower=True)
+            L = cholesky(K)
             # Step 1: estimate beta, which is the coefficient of basis function
             # f, basis function
             # f = self.predict_lf(self.sample_xh)
@@ -191,7 +193,7 @@ class MFRBFGPR:
             # K^(-1)f
             KF = solve(L.T, solve(L, self.f))
             # cholesky decomposition for (F^T *K^(-1)* F)
-            ld = cholesky(np.dot(self.f.T, KF), lower=True)
+            ld = cholesky(np.dot(self.f.T, KF))
             # beta = (F^T *K^(-1)* F)^(-1) * F^T *R^(-1) * Y
             beta = solve(ld.T, solve(ld, np.dot(self.f.T, alpha)))
 
@@ -222,7 +224,7 @@ class MFRBFGPR:
             self.sample_xh_scaled, self.sample_xh_scaled) + \
             self.noise**2 * np.eye(self._num_xh)
 
-        self.L = cholesky(self.K, lower=True)
+        self.L = cholesky(self.K)
 
         # step 1: get the optimal beta
         # f, basis function
@@ -231,7 +233,7 @@ class MFRBFGPR:
         self.alpha = solve(self.L.T, solve(self.L, self.sample_yh))
         # K^(-1)f
         self.KF = solve(self.L.T, solve(self.L, self.f))
-        self.ld = cholesky(np.dot(self.f.T, self.KF), lower=True)
+        self.ld = cholesky(np.dot(self.f.T, self.KF))
         # beta = (F^T *K^(-1)* F)^(-1) * F^T *R^(-1) * Y
         self.beta = solve(self.ld.T, solve(
             self.ld, np.dot(self.f.T, self.alpha)))
