@@ -2,10 +2,11 @@
 from typing import Any
 
 import torch
-from bnn import BNNWrapper
-# import local modules
-from dnn import LFDNN
 from torch import nn as nn
+
+from mfbml.methods.bnn import BNNWrapper
+# import local modules
+from mfbml.methods.dnn import LFDNN
 
 # the first step of the multi-fidelity framework is to create a low-fidelity model
 # the low-fidelity model is a DNN
@@ -230,6 +231,7 @@ class MFDNNBNN:
 
 #     # use multi-fidelity forrester function to test the performance of the MFDNNBNN class
 #     lf_samples = torch.linspace(0, 1, 200).reshape(-1, 1)
+#     print(lf_samples)
 #     hf_samples = lf_samples[::20]  # sample every 20 points
 
 #     hf_responses = (6 * hf_samples - 2) ** 2 * torch.sin(12 * hf_samples - 4) + \
