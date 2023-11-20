@@ -1,9 +1,14 @@
 # this script is used for the mf_dnn_bnn framework
+# standard library
 from typing import Any
 
+# third party modules
+import numpy as np
 import torch
+from scipy.optimize import minimize
 from torch import nn as nn
 
+# local modules
 from mfbml.methods.bnn import BNNWrapper
 # import local modules
 from mfbml.methods.dnn import LFDNN
@@ -19,7 +24,9 @@ class MFDNNBNN:
 
     def __init__(self,
                  lf_configure: dict,
-                 hf_configure: dict) -> None:
+                 hf_configure: dict,
+                 beta_optimize: bool = True,
+                 beta_bounds: list = [1e-2, 1e1]) -> None:
         """initialize the multi-fidelity DNN-BNN framework
 
         Parameters
@@ -28,9 +35,19 @@ class MFDNNBNN:
             a dictionary containing the configuration of the low-fidelity model
         hf_configure : dict
             a dictionary containing the configuration of the high-fidelity model
+        beta_optimize : bool, optional
+            whether to optimize the beta or not, by default True
+        beta_bounds : list, optional
+            the bounds of the beta, by default [1e-2, 1e1]
         """
+        # record the configuration of the low-fidelity model
         self.lf_configure = lf_configure
         self.hf_configure = hf_configure
+
+        # record beta optimize or not
+        self.beta_optimize = beta_optimize
+        self.beta = np.array([1.0])
+        self.beta_bounds = beta_bounds
 
         # create the low-fidelity model
         self.lf_model = self._lf_model()
@@ -102,20 +119,34 @@ class MFDNNBNN:
             _description_, by default {"num_epochs": 10000,
             "sample_freq": 100, "print_info": True, "burn_in_epochs": 1000}
         """
+        # get the low-fidelity samples
+        self.lf_samples = samples["lf"]
+        # get the high-fidelity samples
+        self.hf_samples = samples["hf"]
+        # get the low-fidelity responses
+        self.lf_responses = responses["lf"]
+        # get the high-fidelity responses
+        self.hf_responses = responses["hf"]
+
         # train the low-fidelity model
-        self.train_lf_model(x=samples["lf_samples"],
-                            y=responses["lf_responses"],
+        self.train_lf_model(x=samples["lf"],
+                            y=responses["lf"],
                             batch_size=lf_train_config["batch_size"],
                             num_epochs=lf_train_config["num_epochs"],
                             print_iter=lf_train_config["print_iter"])
+        # optimize the beta
+        if self.beta_optimize:
+            self.beta = self._beta_optimize()
+        print("beta: ", self.beta)
         # get the low-fidelity model prediction of the high-fidelity samples
-        lf_hf_samples = self.lf_model.forward(samples["hf_samples"])
+        lf_hf_samples = self.lf_model.forward(samples["hf"])
         # get the discrepancy between the high-fidelity and low-fidelity samples
-        dis_hf_lf_samples = responses["hf_responses"] - lf_hf_samples
+        dis_hf_lf_samples = responses["hf"] - \
+            torch.from_numpy(self.beta)*lf_hf_samples
         # set the samplers to be torch tensors
         dis_hf_lf_samples = torch.Tensor(dis_hf_lf_samples)
         # train the high-fidelity model
-        self.train_hf_model(x=samples["hf_samples"],
+        self.train_hf_model(x=samples["hf"],
                             y=dis_hf_lf_samples,
                             num_epochs=hf_train_config["num_epochs"],
                             sample_freq=hf_train_config["sample_freq"],
@@ -141,7 +172,7 @@ class MFDNNBNN:
         # get the high-fidelity model prediction
         hf_mean, epistemic, total_unc, aleatoric = self.hf_model.predict(x)
         # get the final prediction
-        y = lf_y.detach().numpy() + hf_mean
+        y = self.beta*lf_y.detach().numpy() + hf_mean
 
         return y, epistemic, total_unc, aleatoric
 
@@ -204,6 +235,46 @@ class MFDNNBNN:
                             sample_freq=sample_freq,
                             print_info=print_info,
                             burn_in_epochs=burn_in_epochs)
+
+    def _beta_optimize(self) -> np.ndarray:
+
+      # optimize the beta
+        x0 = np.random.uniform(self.beta_bounds[0], self.beta_bounds[1], 1)
+        optRes = minimize(
+            self._eval_error,
+            x0=x0,
+            method="L-BFGS-B",
+            bounds=np.array([self.beta_bounds]),
+        )
+
+        beta = optRes.x
+
+        return beta
+
+    def _eval_error(self, beta: np.ndarray) -> np.ndarray:
+        """calculate the error between the high-fidelity and low-fidelity model
+
+        Parameters
+        ----------
+        beta : np.ndarray
+            the parameter determining how much the low-fidelity model is trusted
+
+        Returns
+        -------
+        np.ndarray
+            the error between the high-fidelity and low-fidelity model
+        """
+        # get the low-fidelity model prediction of the high-fidelity samples
+        hf_responses = self.hf_responses.clone().detach().numpy()
+        lf_responses = self.lf_model.forward(
+            self.hf_samples).clone().detach().numpy()
+        beta = np.tile(beta.reshape(-1, 1), (1, hf_responses.shape[0]))
+        # calculate the error between the high-fidelity and low-fidelity model
+        error = (beta * lf_responses.ravel() - hf_responses.ravel())
+        # calculate the sum of the error
+        sum_error = np.sum(error**2, axis=1)
+
+        return sum_error
 
 
 # # test the MFDNNBNN class

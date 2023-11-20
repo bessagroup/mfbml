@@ -5,20 +5,19 @@ import numpy as np
 import torch
 
 from mfbml.methods.mfdnnbnn import MFDNNBNN
-from mfbml.problem_sets.torch_problems import MengCase1
+from mfbml.problem_sets.torch_problems import Forrester1b, MengCase1
 
 # define function
-func = MengCase1(noise_std=0.05)
+func = Forrester1b(noise_std=0.3)
 num_dim = 1
 
 # use multi-fidelity forrester function to test the performance of the MFDNNBNN class
-lf_samples = torch.linspace(0, 1, 100).reshape(-1, 1)
-hf_samples = lf_samples[::4]  # sample every 10 points
+lf_samples = torch.linspace(0, 1, 101).reshape(-1, 1)
+hf_samples = lf_samples[::5]  # sample every 5 points
 
 
 # generate responses
 lf_responses = func.lf(lf_samples)
-print(lf_responses)
 hf_responses = func.hf(hf_samples)
 
 # create the configuration of the low-fidelity model
@@ -28,7 +27,7 @@ lf_configure = {"in_features": 1,
                 "activation": "Tanh",
                 "optimizer": "Adam",
                 "lr": 0.001,
-                "weight_decay": 0.00001,
+                "weight_decay": 0.001,
                 "loss": "mse"}
 # create the configuration of the high-fidelity model
 hf_configure = {"in_features": 1,
@@ -36,26 +35,28 @@ hf_configure = {"in_features": 1,
                 "out_features": 1,
                 "activation": "Tanh",
                 "lr": 0.001,
-                "sigma": 0.05}
+                "sigma": 0.3}
 # create the MFDNNBNN object
 mfdnnbnn = MFDNNBNN(lf_configure=lf_configure,
-                    hf_configure=hf_configure)
+                    hf_configure=hf_configure,
+                    beta_optimize=True,
+                    beta_bounds=[-5, 5])
 
 
-samples = {"lf_samples": lf_samples,
-           "hf_samples": hf_samples}
+samples = {"lf": lf_samples,
+           "hf": hf_samples}
 
-responses = {"lf_responses": lf_responses,
-             "hf_responses": hf_responses}
+responses = {"lf": lf_responses,
+             "hf": hf_responses}
 
 # lf train config
 lf_train_config = {"batch_size": None,
                    "num_epochs": 20000,
                    "print_iter": 100}
-hf_train_config = {"num_epochs": 50000,
+hf_train_config = {"num_epochs": 10000,
                    "sample_freq": 100,
                    "print_info": True,
-                   "burn_in_epochs": 30000}
+                   "burn_in_epochs": 2000}
 
 # train the MFDNNBNN object
 mfdnnbnn.train(samples=samples,

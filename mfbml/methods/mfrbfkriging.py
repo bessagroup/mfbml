@@ -151,7 +151,7 @@ class MFRBFKriging:
             KF = solve(L.T, solve(L, self.f))
             # cholesky decomposition for (F^T *K^(-1)* F)
             ld = cholesky(np.dot(self.f.T, KF))
-            # beta = (F^T *K^(-1)* F)^(-1) * F^T *R^(-1) * Y
+            # beta = (F^T *K^(-1)* F)^(-1) * F^T *K^(-1) * Y
             beta = solve(ld.T, solve(ld, np.dot(self.f.T, alpha)))
 
             # step 2: estimate sigma2
