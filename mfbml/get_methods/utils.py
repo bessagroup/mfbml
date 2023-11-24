@@ -38,14 +38,14 @@ def get_method(method_name: str, design_space: np.ndarray) -> Any:
     """
 
     if method_name == 'kriging':
-        return Kriging(design_space=design_space)
+        return Kriging(design_space=design_space, optimizer_restart=10)
     elif method_name == 'hk':
-        return HierarchicalKriging(design_space=design_space)
+        return HierarchicalKriging(design_space=design_space, optimizer_restart=10)
     elif method_name == 'ck':
-        return CoKriging(design_space=design_space)
+        return CoKriging(design_space=design_space, optimizer_restart=10)
     elif method_name == 'mf_rbf':
-        return MFRBFKriging(design_space=design_space)
+        return MFRBFKriging(design_space=design_space, optimizer_restart=10)
     elif method_name == 'mf_scale':
-        return ScaledKriging(design_space=design_space)
+        return ScaledKriging(design_space=design_space, optimizer_restart=10)
     else:
         raise ValueError('method name not found')
