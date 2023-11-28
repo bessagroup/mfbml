@@ -91,7 +91,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=10400, seed=1)
+    data.sample(sampler='random', n_samples=104000, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
