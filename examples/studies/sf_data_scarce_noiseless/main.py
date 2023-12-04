@@ -16,8 +16,9 @@ from f3dasm import (CategoricalParameter, DiscreteParameter, Domain,
                     ExperimentData, ExperimentSample)
 from f3dasm.datageneration import DataGenerator
 from mfpml.design_of_experiment.multifidelity_samplers import MFLatinHyperCube
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import r2_score
 
+from mfbml.get_methods.accuracy_metrics import normalized_mae, normalized_rmse
 from mfbml.get_methods.utils import get_method
 from mfbml.problem_sets.noiseless_problems import register_problem
 
@@ -36,13 +37,12 @@ def create_experiment_data() -> None:
     2. the response variables are mae, mse, r2, and cpu time
     """
     # define problem sets
-    problem_sets = ['Forrester_1a', 'Forrester_1b', 'Forrester_1c',
-                    'mf_Bohachevsky', 'mf_Booth', 'mf_Borehole',
+    problem_sets = ['Forrester_1a', 'mf_Bohachevsky', 'mf_Booth', 'mf_Borehole',
                     'mf_CurrinExp', 'mf_Hartman3', 'mf_Hartman6',
                     'mf_Himmelblau', 'mf_Park91A', 'mf_Park91B',
                     'mf_Sixhump']
     # define seed sets
-    seed_sets = [i for i in range(1, 11)]
+    seed_sets = [i for i in range(1, 6)]
 
     # define the number of lf samples
     num_samples = [2*i for i in range(1, 21)]
@@ -61,8 +61,6 @@ def create_experiment_data() -> None:
     # create the experiment data via f3dasm
     domain = Domain()
     domain.add('problem', CategoricalParameter(['Forrester_1a',
-                                                'Forrester_1b',
-                                                'Forrester_1c',
                                                 'mf_Bohachevsky',
                                                 'mf_Booth',
                                                 'mf_Borehole',
@@ -78,7 +76,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=2600, seed=1)
+    data.sample(sampler='random', n_samples=1100, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
@@ -87,8 +85,8 @@ def create_experiment_data() -> None:
 
     # add output data
     data.add_output_parameter('progress')
-    data.add_output_parameter('mae')
-    data.add_output_parameter('mse')
+    data.add_output_parameter('normalized_mae')
+    data.add_output_parameter('normalized_rmse')
     data.add_output_parameter('r2')
     data.add_output_parameter('cpu_time')
 
@@ -144,11 +142,11 @@ def run_method(
     # print('prediction time: ', end_time - start_time)
     cpu_time = end_time - start_time
     # accuracy test
-    mae = mean_absolute_error(func.hf(test_x['hf']), pred_y)
-    mse = mean_squared_error(func.hf(test_x['hf']), pred_y)
+    nmae = normalized_mae(func.hf(test_x['hf']), pred_y)
+    nrmse = normalized_rmse(func.hf(test_x['hf']), pred_y)
     r2 = r2_score(func.hf(test_x['hf']), pred_y)
 
-    return {'mae': mae, 'mse': mse, 'r2': r2, 'cpu_time': cpu_time}
+    return {'normalized_mae': nmae, 'normalized_rmse': nrmse, 'r2': r2, 'cpu_time': cpu_time}
 
 
 class MFBMLExperiments(DataGenerator):
@@ -196,8 +194,8 @@ class MFBMLExperiments(DataGenerator):
             print("seed: ", seed)
             print("num_sample: ", num_sample)
             # results print to the screen
-            print("mae: ", results['mae'])
-            print("mse: ", results['mse'])
+            print("normalized mae: ", results['normalized_mae'])
+            print("normalized rmse: ", results['normalized_rmse'])
             print("r2: ", results['r2'])
             print("cpu_time: ", results['cpu_time'])
             print("=====================================")
@@ -205,8 +203,8 @@ class MFBMLExperiments(DataGenerator):
             sample.output_data['progress'] = "finished"
 
             # update the output data
-            sample.output_data['mae'] = results['mae']
-            sample.output_data['mse'] = results['mse']
+            sample.output_data['normalized_mae'] = results['normalized_mae']
+            sample.output_data['normalized_rmse'] = results['normalized_rmse']
             sample.output_data['r2'] = results['r2']
             sample.output_data['cpu_time'] = results['cpu_time']
 
@@ -216,8 +214,8 @@ class MFBMLExperiments(DataGenerator):
             # print the error message
             print(e)
             # save other output data to be None
-            sample.output_data['mae'] = None
-            sample.output_data['mse'] = None
+            sample.output_data['normalized_mae'] = None
+            sample.output_data['normalized_rmse'] = None
             sample.output_data['r2'] = None
             sample.output_data['cpu_time'] = None
 
@@ -232,13 +230,13 @@ def execute_experimentdata() -> None:
     data = f3dasm.ExperimentData.from_file(
         filename='exp_{}'.format('kriging'))
     # run the function
-    data.evaluate(MFBMLExperiments(), mode='cluster')
-    # data.store(filename='exp_{}'.format('kriging_results'))
+    data.evaluate(MFBMLExperiments(), mode='sequential')
+    data.store(filename='exp_{}'.format('kriging_results'))
 
 
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
-    # f3dasm.HPC_JOBID = 0
+    f3dasm.HPC_JOBID = 0
     if f3dasm.HPC_JOBID == 0:
         create_experiment_data()
         execute_experimentdata()

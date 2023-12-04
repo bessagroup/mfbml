@@ -59,9 +59,12 @@ class MFRBFGPR:
         self.sample_xh = sample_xh
         self.sample_xh_scaled = self.normalize_input(self.sample_xh)
         self.sample_yh = sample_yh.reshape(-1, 1)
+        # normalize the output
+        self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
+        self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
 
         # prediction of low-fidelity at high-fidelity locations
-        self.f = self.predict_lf(self.sample_xh)
+        self.f = (self.predict_lf(self.sample_xh)-self.yh_mean)/self.yh_std
         # optimize the hyper parameters
         self._optHyp()
         # update kernel parameters
@@ -79,11 +82,10 @@ class MFRBFGPR:
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the predicted mean
-        f = self.predict_lf(x_predict)
+        f = (self.predict_lf(x_predict)-self.yh_mean)/self.yh_std
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
-
-        fmean = fmean.reshape(-1, 1)
+        fmean = (fmean * self.yh_std + self.yh_mean).reshape(-1, 1)
         # calculate the standard deviation
         if not return_std:
             return fmean.reshape(-1, 1)
@@ -102,7 +104,7 @@ class MFRBFGPR:
             )
             std = np.sqrt(np.maximum(mse, 0)).reshape(-1, 1)
             # epistemic uncertainty
-            self.epistemic = std
+            self.epistemic = std*self.yh_std
 
             # total uncertainty
             total_unc = np.sqrt(std**2 + self.noise**2)
@@ -115,7 +117,7 @@ class MFRBFGPR:
             upper_bound_theta = self.kernel._get_high_bound
             # set up the bounds for noise sigma
             lower_bound_sigma = 1e-2
-            upper_bound_sigma = 2
+            upper_bound_sigma = 10.0
             # set up the bounds for the hyper-parameters
             lower_bound = np.hstack((lower_bound_theta, lower_bound_sigma))
             upper_bound = np.hstack((upper_bound_theta, upper_bound_sigma))
@@ -172,7 +174,7 @@ class MFRBFGPR:
                 noise_sigma = params[i, -1]
             else:
                 param = params[i, :]
-                noise_sigma = self.noise
+                noise_sigma = self.noise/self.yh_std
 
             # calculate the covariance matrix
             K = self.kernel(self.sample_xh_scaled,
@@ -183,7 +185,7 @@ class MFRBFGPR:
             # f, basis function
             # f = self.predict_lf(self.sample_xh)
             # alpha = K^(-1) * Y
-            alpha = solve(L.T, solve(L, self.sample_yh))
+            alpha = solve(L.T, solve(L, self.sample_yh_scaled))
             # K^(-1)f
             KF = solve(L.T, solve(L, self.f))
             # cholesky decomposition for (F^T *K^(-1)* F)
@@ -194,8 +196,8 @@ class MFRBFGPR:
             # step 2: estimate sigma2
             # gamma = 1/n * (Y - F * beta)^T * K^(-1) * (Y - F * beta)
             gamma = solve(L.T, solve(
-                L, (self.sample_yh - np.dot(self.f, beta))))
-            sigma2 = np.dot((self.sample_yh - np.dot(self.f, beta)).T,
+                L, (self.sample_yh_scaled - np.dot(self.f, beta))))
+            sigma2 = np.dot((self.sample_yh_scaled - np.dot(self.f, beta)).T,
                             gamma) / self._num_xh
 
             # step 3: calculate the log likelihood
@@ -209,22 +211,20 @@ class MFRBFGPR:
         """Update parameters of the model"""
         # update parameters with optimized hyper-parameters
         if self.noise is None:
-            self.noise = self.opt_param[-1]
+            self.noise = self.opt_param[-1]*self.yh_std
             self.kernel.set_params(self.opt_param[:-1])
         else:
             self.kernel.set_params(self.opt_param)
         # get the kernel matrix
         self.K = self.kernel.get_kernel_matrix(
             self.sample_xh_scaled, self.sample_xh_scaled) + \
-            self.noise**2 * np.eye(self._num_xh)
+            (self.noise/self.yh_std)**2 * np.eye(self._num_xh)
 
         self.L = cholesky(self.K)
 
         # step 1: get the optimal beta
-        # f, basis function
-        # self.f = self.predict_lf(self.sample_xh)
         # alpha = K^(-1) * Y
-        self.alpha = solve(self.L.T, solve(self.L, self.sample_yh))
+        self.alpha = solve(self.L.T, solve(self.L, self.sample_yh_scaled))
         # K^(-1)f
         self.KF = solve(self.L.T, solve(self.L, self.f))
         self.ld = cholesky(np.dot(self.f.T, self.KF))
@@ -234,8 +234,8 @@ class MFRBFGPR:
 
         # step 2: get the optimal sigma2
         self.gamma = solve(self.L.T, solve(
-            self.L, (self.sample_yh - np.dot(self.f, self.beta))))
-        self.sigma2 = np.dot((self.sample_yh - np.dot(self.f, self.beta)).T,
+            self.L, (self.sample_yh_scaled - np.dot(self.f, self.beta))))
+        self.sigma2 = np.dot((self.sample_yh_scaled - np.dot(self.f, self.beta)).T,
                              self.gamma) / self._num_xh
 
         # step 3: get the optimal log likelihood
@@ -318,6 +318,13 @@ class MFRBFGPR:
         return (inputs - self.bounds[:, 0]) / (
             self.bounds[:, 1] - self.bounds[:, 0]
         )
+
+    def normalize_hf_output(self, outputs: np.ndarray) -> np.ndarray:
+
+        self.yh_mean = np.mean(outputs)
+        self.yh_std = np.std(outputs)
+
+        return (outputs - self.yh_mean) / self.yh_std
 
     @property
     def _get_lf_model(self) -> Any:

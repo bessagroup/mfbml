@@ -56,9 +56,12 @@ class MFRBFKriging:
         self.sample_xh = sample_xh
         self.sample_xh_scaled = self.normalize_input(self.sample_xh)
         self.sample_yh = sample_yh.reshape(-1, 1)
-
+        # normalize the output
+        self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
+        self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
         # prediction of low-fidelity at high-fidelity locations
-        self.f = self.predict_lf(self.sample_xh)
+        f = self.predict_lf(self.sample_xh)
+        self.f = (f-self.yh_mean)/self.yh_std
         # optimize the hyper parameters
         self._optHyp()
         # update kernel parameters
@@ -75,12 +78,12 @@ class MFRBFKriging:
         sample_new = np.atleast_2d(sample_new)
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
-        # calculate the predicted mean
-        f = self.predict_lf(x_predict)
+        # calculate the normalized predicted mean
+        f = (self.predict_lf(x_predict) - self.yh_mean) / self.yh_std
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
-
-        fmean = fmean.reshape(-1, 1)
+        # scaled the mean back to original scale
+        fmean = fmean * self.yh_std + self.yh_mean
         # calculate the standard deviation
         if not return_std:
             return fmean.reshape(-1, 1)
@@ -98,6 +101,8 @@ class MFRBFKriging:
                 / self.f.T.dot(self.KF)
             )
             std = np.sqrt(np.maximum(mse, 0)).reshape(-1, 1)
+            std = std * self.yh_std
+
             return fmean, std
 
     def _optHyp(self) -> None:
@@ -146,7 +151,7 @@ class MFRBFKriging:
             # f, basis function
             # f = self.predict_lf(self.sample_xh)
             # alpha = K^(-1) * Y
-            alpha = solve(L.T, solve(L, self.sample_yh))
+            alpha = solve(L.T, solve(L, self.sample_yh_scaled))
             # K^(-1)f
             KF = solve(L.T, solve(L, self.f))
             # cholesky decomposition for (F^T *K^(-1)* F)
@@ -157,8 +162,8 @@ class MFRBFKriging:
             # step 2: estimate sigma2
             # gamma = 1/n * (Y - F * beta)^T * K^(-1) * (Y - F * beta)
             gamma = solve(L.T, solve(
-                L, (self.sample_yh - np.dot(self.f, beta))))
-            sigma2 = np.dot((self.sample_yh - np.dot(self.f, beta)).T,
+                L, (self.sample_yh_scaled - np.dot(self.f, beta))))
+            sigma2 = np.dot((self.sample_yh_scaled - np.dot(self.f, beta)).T,
                             gamma) / self._num_xh
 
             # step 3: calculate the log likelihood
@@ -179,7 +184,7 @@ class MFRBFKriging:
         # f, basis function
         # self.f = self.predict_lf(self.sample_xh)
         # alpha = K^(-1) * Y
-        self.alpha = solve(self.L.T, solve(self.L, self.sample_yh))
+        self.alpha = solve(self.L.T, solve(self.L, self.sample_yh_scaled))
         # K^(-1)f
         self.KF = solve(self.L.T, solve(self.L, self.f))
         self.ld = cholesky(np.dot(self.f.T, self.KF))
@@ -189,8 +194,8 @@ class MFRBFKriging:
 
         # step 2: get the optimal sigma2
         self.gamma = solve(self.L.T, solve(
-            self.L, (self.sample_yh - np.dot(self.f, self.beta))))
-        self.sigma2 = np.dot((self.sample_yh - np.dot(self.f, self.beta)).T,
+            self.L, (self.sample_yh_scaled - np.dot(self.f, self.beta))))
+        self.sigma2 = np.dot((self.sample_yh_scaled - np.dot(self.f, self.beta)).T,
                              self.gamma) / self._num_xh
 
         # step 3: get the optimal log likelihood
@@ -206,44 +211,6 @@ class MFRBFKriging:
             instance of optimizer
         """
         self.optimizer = optimizer
-
-    def update_model(self, Xnew: dict, Ynew: dict) -> None:
-        """Update the multi-fidelity model with new samples
-
-        Parameters
-        ----------
-        Xnew : dict
-            dict with two keys, where contains the new samples
-            If value is None then no sample to update
-        Ynew : dict
-            corresponding responses w.r.t. Xnew
-        """
-        XHnew = Xnew["hf"]
-        YHnew = Ynew["hf"]
-        XLnew = Xnew["lf"]
-        YLnew = Ynew["lf"]
-        if XLnew is not None and YLnew is not None:
-            if XHnew is not None and YHnew is not None:
-                X = {}
-                Y = {}
-                X["hf"] = np.concatenate((self.sample_xh, XHnew))
-                Y["hf"] = np.concatenate((self.sample_yh, YHnew))
-                X["lf"] = np.concatenate((self.sample_xl, XLnew))
-                Y["lf"] = np.concatenate((self.sample_yl, YLnew))
-                self.train(X, Y)
-            else:
-                X = {}
-                Y = {}
-                X["hf"] = self.sample_xh
-                Y["hf"] = self.sample_yh
-                X["lf"] = np.concatenate((self.sample_xl, XLnew))
-                Y["lf"] = np.concatenate((self.sample_yl, YLnew))
-                self.train(X, Y)
-        else:
-            if XHnew is not None and YHnew is not None:
-                XH = np.concatenate((self.sample_xh, XHnew))
-                YH = np.concatenate((self.sample_yh, YHnew))
-                self._train_hf(XH, YH)
 
     def _train_lf(self,
                   sample_xl: np.ndarray,
@@ -261,10 +228,41 @@ class MFRBFKriging:
         return self.lf_model.predict(test_xl)
 
     def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
+        """Normalize the input into [0, 1] according to the bounds
+
+        Parameters
+        ----------
+        inputs : np.ndarray
+            sample points
+
+        Returns
+        -------
+        np.ndarray
+            normalized sample points
+        """
 
         return (inputs - self.bounds[:, 0]) / (
             self.bounds[:, 1] - self.bounds[:, 0]
         )
+
+    def normalize_hf_output(self, outputs: np.ndarray) -> np.ndarray:
+        """Normalize the output into normal distribution
+
+        Parameters
+        ----------
+        outputs : np.ndarray
+            responses of high-fidelity
+
+        Returns
+        -------
+        np.ndarray
+            normalized responses
+        """
+        # calculate the mean and std of hf responses
+        self.yh_mean = np.mean(outputs)
+        self.yh_std = np.std(outputs)
+
+        return (outputs - self.yh_mean) / self.yh_std
 
     @property
     def _get_lf_model(self) -> Any:
