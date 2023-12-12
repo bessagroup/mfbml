@@ -28,7 +28,7 @@ from mfbml.problem_sets.noiseless_problems import register_problem
 
 
 def create_experiment_data() -> None:
-    """create experimental data, where the design variables are functions, 
+    """create experimental data, where the design variables are functions,
     methods, and seeds, and the response variables are mae, mse, r2, and cpu
     time. f3dasm is used here to create the experimental data, and later the
     experimental data will be used to run the methods.
@@ -39,37 +39,43 @@ def create_experiment_data() -> None:
     2. the response variables are mae, mse, r2, and cpu time
     """
     # define problem sets
-    problem_sets = ['Forrester_1a', 'mf_Bohachevsky', 'mf_Booth',
-                    'mf_Borehole', 'mf_CurrinExp', 'mf_Hartman3',
-                    'mf_Hartman6', 'mf_Himmelblau',
-                    'mf_Park91A', 'mf_Park91B', 'mf_Sixhump']
+    problem_sets = ['Forrester_1a', 'Forrester_1b', 'Forrester_1c',
+                    'mf_Bohachevsky', 'mf_Booth', 'mf_Borehole',
+                    'mf_CurrinExp', 'mf_Hartman3', 'mf_Hartman6',
+                    'mf_Himmelblau', 'mf_Park91A', 'mf_Park91B',
+                    'mf_Sixhump']
 
     # define seed sets
     seed_sets = [i for i in range(1, 6)]
 
-    # define the number of lf samples
-    num_samples = [10 + 10*i for i in range(1, 10)]
+    # define the number of lf and hf samples
+    num_lf_sample = [200 + 20*i for i in range(1, 11)]
+    num_hf_sample = [10 + 10*i for i in range(0, 10)]
 
     # define noise level for high fidelity
     noise_levels = [0.1, 0.3, 0.5]
 
     # create design variables
     design_variables = []
+
     for problem in problem_sets:
         for seed in seed_sets:
-            for num_sample in num_samples:
-                for noise_level in noise_levels:
-                    design_variables.append(
-                        [problem, seed, num_sample, noise_level])
+            for num_lf in num_lf_sample:
+                for num_hf in num_hf_sample:
+                    for noise_std in noise_levels:
+                        design_variables.append(
+                            [problem, seed, num_lf, num_hf, noise_std])
 
     # save design variables tp pandas dataframe
     design_variables = pd.DataFrame(design_variables,
                                     columns=['problem', 'seed',
-                                             'num_sample', "noise_std"])
+                                             'num_lf', "num_hf", "noise_std"])
 
     # create the experiment data via f3dasm
     domain = Domain()
     domain.add('problem', CategoricalParameter(['Forrester_1a',
+                                                'Forrester_1b',
+                                                'Forrester_1c',
                                                 'mf_Bohachevsky',
                                                 'mf_Booth',
                                                 'mf_Borehole',
@@ -81,19 +87,22 @@ def create_experiment_data() -> None:
                                                 'mf_Park91B',
                                                 'mf_Sixhump']))
     domain.add('seed', DiscreteParameter(lower_bound=1, upper_bound=10))
-    domain.add('num_sample', DiscreteParameter(
-        lower_bound=30, upper_bound=100))
+    domain.add('num_lf', DiscreteParameter(
+        lower_bound=100, upper_bound=200))
+    domain.add('num_hf', DiscreteParameter(
+        lower_bound=10, upper_bound=200))
     domain.add('noise_std', DiscreteParameter(
         lower_bound=1, upper_bound=2))
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=1485, seed=1)
+    data.sample(sampler='random', n_samples=19500, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
     data.input_data.data['seed'] = design_variables['seed']
-    data.input_data.data['num_sample'] = design_variables['num_sample']
+    data.input_data.data['num_lf'] = design_variables['num_lf']
+    data.input_data.data['num_hf'] = design_variables['num_hf']
     data.input_data.data['noise_std'] = design_variables['noise_std']
 
     # add output data
@@ -106,13 +115,14 @@ def create_experiment_data() -> None:
     data.add_output_parameter('cpu_time')
 
     # save the experiment data
-    data.store(filename='exp_{}'.format('gpr'))
+    data.store(filename='exp_{}'.format('mf_rbf_gpr'))
 
 
 def run_method(
         problem_name: str,
         seed: int,
-        num_sample: int,
+        num_lf: int,
+        num_hf: int,
         noise_std: float) -> dict:
     """run a method on the data scarce noiseless problem sets, only fir multi-
     fidelity method. The single fidelity method is not supported.
@@ -123,8 +133,10 @@ def run_method(
         name of the problem
     seed : int
         random seed
-    num_sample : int
-        number of samples
+    num_lf : int
+        number of low fidelity samples
+    num_hf : int
+        number of high fidelity samples
     noise_std : float
         noise level
 
@@ -141,10 +153,15 @@ def run_method(
     # define sampler
     sampler = MFLatinHyperCube(design_space=func.design_space, seed=seed)
     sample_x = sampler.get_samples(
-        num_hf_samples=num_sample*num_dim, num_lf_samples=num_sample*num_dim)
-    sample_y = func.hf(sample_x['hf']) + \
+        num_hf_samples=num_hf*num_dim, num_lf_samples=num_lf*num_dim)
+    # define noise samples
+    sample_y = {}
+    sample_y["hf"] = func.hf(sample_x['hf']) + \
         np.random.normal(loc=0, scale=noise_std,
                          size=sample_x['hf'].shape[0]).reshape(-1, 1)
+    sample_y["lf"] = func.lf(sample_x['lf']) + \
+        np.random.normal(loc=0, scale=noise_std,
+                         size=sample_x['lf'].shape[0]).reshape(-1, 1)
 
     # generate test samples
     sampler = MFLatinHyperCube(design_space=func.design_space, seed=seed + 1)
@@ -159,10 +176,10 @@ def run_method(
 
     # define kernel
     model = get_methods_for_noise_data(
-        model_name='gp', design_space=func.input_domain)
+        model_name='mf_rbf_gp', design_space=func.input_domain)
 
     start_time = time.time()
-    model.train(sample_x=sample_x["hf"], sample_y=sample_y)
+    model.train(samples=sample_x, responses=sample_y)
     pred_y, pred_std = model.predict(x_predict=test_x['hf'], return_std=True)
     end_time = time.time()
     cpu_time = end_time - start_time
@@ -215,21 +232,24 @@ class MFBMLExperiments(DataGenerator):
         # get the design parameters of this row
         problem = sample.input_data['problem']
         seed = sample.input_data['seed']
-        num_sample = sample.input_data['num_sample']
+        num_lf = sample.input_data['num_lf']
+        num_hf = sample.input_data['num_hf']
         noise_std = sample.input_data['noise_std']
 
         try:
             results = run_method(
                 problem_name=problem,
                 seed=seed,
-                num_sample=num_sample,
+                num_lf=num_lf,
+                num_hf=num_hf,
                 noise_std=noise_std
             )
             # print running information
             print("=====================================")
             print("problem: ", problem)
             print("seed: ", seed)
-            print("num_sample: ", num_sample)
+            print("num_lf: ", num_lf)
+            print("num_hf: ", num_hf)
             print("noise_std: ", noise_std)
             # results print to the screen
             print("normalized mae: ", results['normalized_mae'])
@@ -272,10 +292,10 @@ def execute_experimentdata() -> None:
 
     # load data from file
     data = f3dasm.ExperimentData.from_file(
-        filename='exp_{}'.format('gpr'))
+        filename='exp_{}'.format('mf_rbf_gpr'))
     # run the function
     data.evaluate(MFBMLExperiments(), mode='cluster')
-    # data.store(filename='exp_{}'.format('gpr_results'))
+    # data.store(filename='exp_{}'.format('mf_rbf_gpr_results'))
 
 
 def main() -> None:

@@ -47,7 +47,7 @@ def normalized_rmse(y_true: np.ndarray,
         normalized root mean squared error
     """
 
-    return np.sqrt(np.mean((y_true - y_pred_mean)**2)) / np.mean(y_true)
+    return np.sqrt(np.mean((y_true - y_pred_mean)**2)) / np.mean(np.abs(y_true))
 
 
 def normalized_mae(y_true: np.ndarray,
@@ -68,4 +68,4 @@ def normalized_mae(y_true: np.ndarray,
         normalized max absolute error
     """
 
-    return np.max(np.abs(y_true - y_pred_mean)) / np.mean(y_true)
+    return np.max(np.abs(y_true - y_pred_mean)) / np.mean(np.abs(y_true))
