@@ -117,7 +117,7 @@ class MFRBFGPR:
             upper_bound_theta = self.kernel._get_high_bound
             # set up the bounds for noise sigma
             lower_bound_sigma = 1e-2
-            upper_bound_sigma = 10.0
+            upper_bound_sigma = 2.0
             # set up the bounds for the hyper-parameters
             lower_bound = np.hstack((lower_bound_theta, lower_bound_sigma))
             upper_bound = np.hstack((upper_bound_theta, upper_bound_sigma))
