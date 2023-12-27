@@ -13,11 +13,13 @@ class RBFSurrogate:
                  ) -> None:
         # initialize parameters
         self.num_dim = design_space.shape[0]
+
         # bounds of design space
         self.bounds = design_space
 
         # set kernel
         self.kernel = RBF(theta=np.zeros(self.num_dim))
+
         self._set_kernel_params(params=np.ones(self.num_dim))
 
     def _set_kernel_params(self, params=None):
@@ -32,6 +34,7 @@ class RBFSurrogate:
         self.sample_x_scaled = self.normalize_input(sample_x=sample_x,
                                                     bounds=self.bounds)
         self.sample_y_scaled = self.normalize_output(sample_y=sample_y)
+
         # get kernel matrix
         self.K = self.kernel.get_kernel_matrix(self.sample_x_scaled,
                                                self.sample_x_scaled)
