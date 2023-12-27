@@ -1,11 +1,15 @@
+# standard libraries
 import time
 from typing import Any, Tuple
 
+# third party
 import numpy as np
-from mfpml.models.kernels import RBF
-from mfpml.models.rbf import RBFSurrogate
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
+
+# local
+from .rbf_kernel import RBF
+from .rbf_regressor import RBFSurrogate
 
 
 class MFRBFKriging:
@@ -29,7 +33,10 @@ class MFRBFKriging:
             self.kernel = kernel
 
         # define the lf model
-        self.lf_model = RBFSurrogate(design_space=self.bounds)
+        self.lf_model = RBFSurrogate(
+            design_space=self.bounds,
+            params_optimize=True,
+            optimizer_restart=1)
 
     def train(self, samples: dict, responses: dict) -> None:
         """Train the hierarchical Kriging model
@@ -44,29 +51,25 @@ class MFRBFKriging:
             dict with two keys, 'hf' contains high-fidelity
             responses and 'lf' contains low-fidelity ones
         """
-        # train the low-fidelity model
-        self._train_lf(samples["lf"], responses["lf"])
-        # train high-fidelity model, it will be trained at child-class
-        self._train_hf(samples["hf"], responses["hf"])
-
-    def _train_hf(self,
-                  sample_xh: np.ndarray,
-                  sample_yh: np.ndarray) -> None:
-
-        self.sample_xh = sample_xh
+        # get samples and normalize them
+        self.sample_xh = samples["hf"]
+        self.sample_xl = samples["lf"]
         self.sample_xh_scaled = self.normalize_input(self.sample_xh)
-        self.sample_yh = sample_yh.reshape(-1, 1)
-        # normalize the output
+        self.sample_xl_scaled = self.normalize_input(self.sample_xl)
+
+        # get responses and normalize them
+        self.sample_yh = responses["hf"]
+        self.sample_yl = responses["lf"]
         self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
         self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
+        # rbf surrogate model would normalize the inputs directly
+        self.lf_model.train(samples["lf"], responses["lf"])
         # prediction of low-fidelity at high-fidelity locations
         f = self.predict_lf(self.sample_xh)
         self.f = (f-self.yh_mean)/self.yh_std
-        # optimize the hyper parameters
-        self._optHyp()
-        # update kernel parameters
-        self.kernel.set_params(self.opt_param)
-        # update kriging parameters
+        # optimize the hyper parameters of kernel
+        self._optimize_parameters()
+        # update parameters
         self._update_parameters()
 
     def predict(self,
@@ -105,34 +108,30 @@ class MFRBFKriging:
 
             return fmean, std
 
-    def _optHyp(self) -> None:
+    def _optimize_parameters(self) -> None:
+        """optimize the hyper-parameters of kernel
+        """
 
-        if self.optimizer is None:
-            n_trials = self.optimizer_restart + 1
-            opt_fs = float("inf")
-            for _ in range(n_trials):
-                x0 = np.random.uniform(
-                    self.kernel._get_low_bound,
-                    self.kernel._get_high_bound,
-                    self.kernel._get_num_para,
-                )
-                optRes = minimize(
-                    self._logLikelihood,
-                    x0=x0,
-                    method="L-BFGS-B",
-                    bounds=self.kernel._get_bounds_list,
-                )
-                if optRes.fun < opt_fs:
-                    opt_param = optRes.x
-                    opt_fs = optRes.fun
-        else:
-            optRes, _, _ = self.optimizer.run_optimizer(
-                self._logLikelihood,
-                num_dim=self.kernel._get_num_para,
-                design_space=self.kernel._get_bounds,
+        n_trials = self.optimizer_restart + 1
+        opt_fs = float("inf")
+        for _ in range(n_trials):
+            x0 = np.random.uniform(
+                self.kernel._get_low_bound,
+                self.kernel._get_high_bound,
+                self.kernel._get_num_para,
             )
-            opt_param = optRes["best_x"]
-        self.opt_param = opt_param
+            optRes = minimize(
+                self._logLikelihood,
+                x0=x0,
+                method="L-BFGS-B",
+                bounds=self.kernel._get_bounds_list,
+                options={"maxfun": 200},
+            )
+            if optRes.fun < opt_fs:
+                opt_param = optRes.x
+                opt_fs = optRes.fun
+        # set parameters
+        self.kernel.set_params(opt_param)
 
     def _logLikelihood(self, params):
 
@@ -148,8 +147,6 @@ class MFRBFKriging:
                             param)
             L = cholesky(K)
             # Step 1: estimate beta, which is the coefficient of basis function
-            # f, basis function
-            # f = self.predict_lf(self.sample_xh)
             # alpha = K^(-1) * Y
             alpha = solve(L.T, solve(L, self.sample_yh_scaled))
             # K^(-1)f
@@ -181,8 +178,6 @@ class MFRBFKriging:
         self.L = cholesky(self.K)
 
         # step 1: get the optimal beta
-        # f, basis function
-        # self.f = self.predict_lf(self.sample_xh)
         # alpha = K^(-1) * Y
         self.alpha = solve(self.L.T, solve(self.L, self.sample_yh_scaled))
         # K^(-1)f
@@ -201,27 +196,6 @@ class MFRBFKriging:
         # step 3: get the optimal log likelihood
         self.logp = (-0.5 * self._num_xh * np.log(self.sigma2) -
                      np.sum(np.log(np.diag(self.L)))).item()
-
-    def _update_optimizer_hf(self, optimizer: Any) -> None:
-        """Change the optimizer for high-fidelity hyper parameters
-
-        Parameters
-        ----------
-        optimizer : any
-            instance of optimizer
-        """
-        self.optimizer = optimizer
-
-    def _train_lf(self,
-                  sample_xl: np.ndarray,
-                  sample_yl: np.ndarray) -> None:
-
-        # rbf surrogate model would normalize the inputs directly
-        self.lf_model.train(sample_xl, sample_yl)
-        # normalize the input
-        self.sample_xl = sample_xl
-        self.sample_xl_scaled = self.normalize_input(sample_xl)
-        self.sample_yl = sample_yl
 
     def predict_lf(self, test_xl: np.ndarray) -> np.ndarray:
 
