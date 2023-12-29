@@ -10,10 +10,10 @@ from mfpml.problems.multifidelity_functions import (mf_Borehole, mf_Hartman3,
 from sklearn.metrics import r2_score
 
 from mfbml.get_methods.accuracy_metrics import normalized_mae, normalized_rmse
-from mfbml.methods.mfrbfkriging import MFRBFKriging
+from mfbml.methods.mf_rbf_kriging import MFRBFKriging
 
 # define function
-func = mf_Borehole()
+func = mf_Hartman3()
 # define sampler
 sampler = MFSobolSequence(design_space=func.design_space, seed=3)
 sample_x = sampler.get_samples(

@@ -25,8 +25,10 @@ def log_likelihood_value(y_true: np.ndarray,
     float | Any
         log likelihood value
     """
+    obj = np.sum(-0.5 * np.log(2 * np.pi * y_pred_std**2) -
+                 0.5 * (y_true - y_pred_mean)**2 / y_pred_std**2)
 
-    return np.sum(-0.5 * np.log(2 * np.pi * y_pred_std**2) - 0.5 * (y_true - y_pred_mean)**2 / y_pred_std**2)
+    return obj
 
 
 def normalized_rmse(y_true: np.ndarray,

@@ -14,8 +14,8 @@ from mfpml.models.kriging import Kriging
 from mfpml.models.mf_scale_kriging import ScaledKriging
 
 # local library
-from mfbml.methods.mfrbfgp import MFRBFGPR
-from mfbml.methods.mfrbfkriging import MFRBFKriging
+from mfbml.methods.mf_rbf_gpr import MFRBFGPR
+from mfbml.methods.mf_rbf_kriging import MFRBFKriging
 
 
 def get_method(method_name: str, design_space: np.ndarray) -> Any:

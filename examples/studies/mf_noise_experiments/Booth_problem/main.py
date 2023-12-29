@@ -39,18 +39,14 @@ def create_experiment_data() -> None:
     2. the response variables are mae, mse, r2, and cpu time
     """
     # define problem sets
-    problem_sets = ['Forrester_1a', 'Forrester_1b', 'Forrester_1c',
-                    'mf_Bohachevsky', 'mf_Booth', 'mf_Borehole',
-                    'mf_CurrinExp', 'mf_Hartman3', 'mf_Hartman6',
-                    'mf_Himmelblau', 'mf_Park91A', 'mf_Park91B',
-                    'mf_Sixhump']
+    problem_sets = ['mf_Booth']
 
     # define seed sets
     seed_sets = [i for i in range(1, 6)]
 
     # define the number of lf and hf samples
-    num_lf_sample = [200 + 20*i for i in range(1, 11)]
-    num_hf_sample = [10 + 10*i for i in range(0, 10)]
+    num_lf_sample = [100 + 20*i for i in range(1, 11)]
+    num_hf_sample = [5 + 5*i for i in range(0, 20)]
 
     # define noise level for high fidelity
     noise_levels = [0.1, 0.3, 0.5]
@@ -96,7 +92,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=19500, seed=1)
+    data.sample(sampler='random', n_samples=3000, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
@@ -263,8 +259,8 @@ class MFBMLExperiments(DataGenerator):
             sample.output_data['progress'] = "finished"
 
             # update the output data
-            sample.output_data['normalized mae'] = results['normalized_mae']
-            sample.output_data['normalized rmse'] = results['normalized_rmse']
+            sample.output_data['normalized_mae'] = results['normalized_mae']
+            sample.output_data['normalized_rmse'] = results['normalized_rmse']
             sample.output_data['r2'] = results['r2']
             sample.output_data['cpu_time'] = results['cpu_time']
             sample.output_data['log_likelihood'] = results['log_likelihood']
@@ -300,7 +296,7 @@ def execute_experimentdata() -> None:
 
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
-    # f3dasm.HPC_JOBID = 0
+    f3dasm.HPC_JOBID = 0
     if f3dasm.HPC_JOBID == 0:
         create_experiment_data()
         execute_experimentdata()

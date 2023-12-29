@@ -2,12 +2,14 @@ import time
 from typing import Any, Tuple
 
 import numpy as np
-from mfpml.models.kernels import RBF
-from mfpml.models.rbf import NoiseRBFSurrogate
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
+
+# local modules
+from .rbf_kernel import RBF
+from .rbf_regressor import RBFKernelRegression
 
 
 class MFRBFGPR:
@@ -34,6 +36,12 @@ class MFRBFGPR:
         else:
             self.kernel = kernel
 
+        # define the lf model
+        self.lf_model = RBFKernelRegression(design_space=self.bounds,
+                                            params_optimize=True,
+                                            noise_data=True,
+                                            optimizer_restart=5)
+
     def train(self, samples: dict, responses: dict) -> None:
         """Train the hierarchical gaussian process model
 
@@ -47,29 +55,26 @@ class MFRBFGPR:
             dict with two keys, 'hf' contains high-fidelity
             responses and 'lf' contains low-fidelity ones
         """
-        # train the low-fidelity model
-        self._train_lf(samples["lf"], responses["lf"])
-        # train high-fidelity model, it will be trained at child-class
-        self._train_hf(samples["hf"], responses["hf"])
 
-    def _train_hf(self,
-                  sample_xh: np.ndarray,
-                  sample_yh: np.ndarray) -> None:
-
-        self.sample_xh = sample_xh
+        # get samples and normalize them
+        self.sample_xh = samples["hf"]
+        self.sample_xl = samples["lf"]
         self.sample_xh_scaled = self.normalize_input(self.sample_xh)
-        self.sample_yh = sample_yh.reshape(-1, 1)
-        # normalize the output
+        self.sample_xl_scaled = self.normalize_input(self.sample_xl)
+
+        # get responses and normalize them
+        self.sample_yh = responses["hf"]
+        self.sample_yl = responses["lf"]
         self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
         self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
-
+        # rbf surrogate model would normalize the inputs directly
+        self.lf_model.train(samples["lf"], responses["lf"])
         # prediction of low-fidelity at high-fidelity locations
-        self.f = (self.predict_lf(self.sample_xh)-self.yh_mean)/self.yh_std
-        # optimize the hyper parameters
-        self._optHyp()
-        # update kernel parameters
-        self.kernel.set_params(self.opt_param)
-        # update kriging parameters
+        f = self.predict_lf(self.sample_xh)
+        self.f = (f-self.yh_mean)/self.yh_std
+        # optimize the hyper parameters of kernel
+        self._optimize_parameters()
+        # update parameters
         self._update_parameters()
 
     def predict(self,
@@ -91,33 +96,28 @@ class MFRBFGPR:
             return fmean.reshape(-1, 1)
         else:
             delta = solve(self.L.T, solve(self.L, knew))
-            mse = self.sigma2 * (
-                1
-                - np.diag(knew.T.dot(delta))
-                + np.diag(
-                    np.dot(
-                        (knew.T.dot(self.KF) - f),
-                        (knew.T.dot(self.KF) - f).T,
-                    )
-                )
-                / self.f.T.dot(self.KF)
-            )
+            R = f.T - np.dot(self.f.T, delta)
+            # epistemic uncertainty calculation
+            mse = self.sigma2 * \
+                (1 - np.diag(np.dot(knew.T, delta)) +
+                    np.diag(R.T.dot(solve(self.ld.T, solve(self.ld, R))))
+                 )
             std = np.sqrt(np.maximum(mse, 0)).reshape(-1, 1)
-            # epistemic uncertainty
+            # epistemic uncertainty scale back
             self.epistemic = std*self.yh_std
 
             # total uncertainty
-            total_unc = np.sqrt(std**2 + self.noise**2)
+            total_unc = np.sqrt(self.epistemic**2 + self.noise**2)
             return fmean, total_unc
 
-    def _optHyp(self) -> None:
+    def _optimize_parameters(self) -> None:
         if self.noise is None:
             # noise value needs to be optimized
             lower_bound_theta = self.kernel._get_low_bound
             upper_bound_theta = self.kernel._get_high_bound
             # set up the bounds for noise sigma
-            lower_bound_sigma = 1e-2
-            upper_bound_sigma = 2.0
+            lower_bound_sigma = 1e-5
+            upper_bound_sigma = 10.0
             # set up the bounds for the hyper-parameters
             lower_bound = np.hstack((lower_bound_theta, lower_bound_sigma))
             upper_bound = np.hstack((upper_bound_theta, upper_bound_sigma))
@@ -174,7 +174,7 @@ class MFRBFGPR:
                 noise_sigma = params[i, -1]
             else:
                 param = params[i, :]
-                noise_sigma = self.noise/self.yh_std
+                noise_sigma = self.noise / self.yh_std
 
             # calculate the covariance matrix
             K = self.kernel(self.sample_xh_scaled,
@@ -241,62 +241,6 @@ class MFRBFGPR:
         # step 3: get the optimal log likelihood
         self.logp = (-0.5 * self._num_xh * self.sigma2 -
                      np.sum(np.log(np.diag(self.L)))).item()
-
-    def _update_optimizer_hf(self, optimizer: Any) -> None:
-        """Change the optimizer for high-fidelity hyper parameters
-
-        Parameters
-        ----------
-        optimizer : any
-            instance of optimizer
-        """
-        self.optimizer = optimizer
-
-    def _train_lf(self,
-                  sample_xl: np.ndarray,
-                  sample_yl: np.ndarray) -> None:
-
-        if self.noise is None:
-            # explore proper noise level for low-fidelity model
-            noise_stds_lf = np.linspace(0.01, 1.0, 50)
-            r2_list = []
-            for noise in noise_stds_lf:
-                # define the low-fidelity model
-                self.lf_model = NoiseRBFSurrogate(design_space=self.bounds,
-                                                  noise_std=noise)
-                # calculate the validation error
-                r2_value = self._validation(sample_xl, sample_yl)
-                r2_list.append(r2_value)
-            # get the optimal noise for lf model
-            self.best_lf_noise = noise_stds_lf[np.argmax(r2_list)]
-            # define the low-fidelity model
-            self.lf_model = NoiseRBFSurrogate(design_space=self.bounds,
-                                              noise_std=self.best_lf_noise)
-        else:
-            self.lf_model = NoiseRBFSurrogate(design_space=self.bounds,
-                                              noise_std=self.noise)
-        self.lf_model.train(sample_xl, sample_yl)
-        # normalize the input
-        self.sample_xl = sample_xl
-        self.sample_xl_scaled = self.normalize_input(sample_xl)
-        self.sample_yl = sample_yl
-
-    def _validation(self, sample_xl: np.ndarray,
-                    sample_yl: np.ndarray,
-                    ratio_validate: float = 0.2) -> np.ndarray:
-        # leave-p-out cross validation
-        p = int(ratio_validate * sample_xl.shape[0])
-        # split the data into training and validation
-        train_x, val_x, train_y, val_y = train_test_split(
-            sample_xl, sample_yl, test_size=p, random_state=0)
-
-        # train the model
-        self.lf_model.train(train_x, train_y)
-        # get the predicted responses
-        pred_y = self.lf_model.predict(val_x)
-        # calculate the validation error
-        val_error = r2_score(val_y, pred_y)
-        return val_error
 
     def predict_lf(self, test_xl: np.ndarray) -> np.ndarray:
         """Predict the low-fidelity responses

@@ -9,7 +9,7 @@ from scipy.optimize import minimize
 
 # local
 from .rbf_kernel import RBF
-from .rbf_regressor import RBFSurrogate
+from .rbf_regressor import RBFKernelRegression
 
 
 class MFRBFKriging:
@@ -33,7 +33,7 @@ class MFRBFKriging:
             self.kernel = kernel
 
         # define the lf model
-        self.lf_model = RBFSurrogate(
+        self.lf_model = RBFKernelRegression(
             design_space=self.bounds,
             params_optimize=True,
             optimizer_restart=1)

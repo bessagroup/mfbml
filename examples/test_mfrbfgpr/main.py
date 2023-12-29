@@ -12,7 +12,7 @@ from scipy.optimize import minimize
 # import accuracy measures
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-from mfbml.methods.mfrbfgp import MFRBFGPR
+from mfbml.methods.mf_rbf_gpr import MFRBFGPR
 
 func = Forrester_1b()
 
