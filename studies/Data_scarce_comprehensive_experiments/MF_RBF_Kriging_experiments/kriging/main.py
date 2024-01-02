@@ -37,7 +37,7 @@ def create_experiment_data() -> None:
     2. the response variables are mae, mse, r2, and cpu time
     """
     # define problem sets
-    problem_sets = ['Forrester_1a', 'mf_Bohachevsky', 'mf_Booth', 'mf_Borehole',
+    problem_sets = ['mf_Bohachevsky', 'mf_Booth', 'mf_Borehole',
                     'mf_CurrinExp', 'mf_Hartman3', 'mf_Hartman6',
                     'mf_Himmelblau', 'mf_Park91A', 'mf_Park91B',
                     'mf_Sixhump']
@@ -76,7 +76,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=1100, seed=1)
+    data.sample(sampler='random', n_samples=1000, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
@@ -233,10 +233,9 @@ def execute_experimentdata() -> None:
     data.evaluate(MFBMLExperiments(), mode='cluster')
 
 
-
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
-    # f3dasm.HPC_JOBID = 0
+    f3dasm.HPC_JOBID = 0
     if f3dasm.HPC_JOBID == 0:
         create_experiment_data()
         execute_experimentdata()
