@@ -1,6 +1,6 @@
 # this script is used for the mf_dnn_bnn framework
 # standard library
-from typing import Any
+from typing import Any, Tuple
 
 # third party modules
 import numpy as np
@@ -13,20 +13,21 @@ from mfbml.methods.bnn import BNNWrapper
 # import local modules
 from mfbml.methods.dnn import LFDNN
 
-# the first step of the multi-fidelity framework is to create a low-fidelity model
-# the low-fidelity model is a DNN
-# the DNN is created using the LFDNN
-
 
 class MFDNNBNN:
-    """a class for the multi-fidelity DNN-BNN framework
+    """A class for the multi-fidelity DNN-BNN framework, the first step of the
+    multi-fidelity framework is to create a low-fidelity model the low-fidelity
+    model is a DNN the DNN is created using the LFDNN; the second step of the
+    multi-fidelity framework is to create a high-fidelity model using Baysian 
+    neural network (BNN), the BNN is created using the BNNWrapper.
     """
 
     def __init__(self,
                  lf_configure: dict,
                  hf_configure: dict,
                  beta_optimize: bool = True,
-                 beta_bounds: list = [1e-2, 1e1]) -> None:
+                 beta_bounds: list = [1e-2, 1e1],
+                 optimizer_restart: int = 20) -> None:
         """initialize the multi-fidelity DNN-BNN framework
 
         Parameters
@@ -46,53 +47,52 @@ class MFDNNBNN:
 
         # record beta optimize or not
         self.beta_optimize = beta_optimize
+        self.optimizer_restart = optimizer_restart
         self.beta = np.array([1.0])
         self.beta_bounds = beta_bounds
 
         # create the low-fidelity model
-        self.lf_model = self._lf_model()
+        self.define_lf_model()
         # create the high-fidelity model
-        self.hf_model = self._hf_model()
+        self.define_hf_model()
 
-    def _lf_model(self) -> LFDNN:
-        """create the low-fidelity model
-
-        Returns
-        -------
-        LFDNN
-            a LFDNN object
+    def define_lf_model(self, lf_model: Any = None) -> None:
+        """create the low-fidelity model, it can be defined by using passing a 
+        dictionary containing the configuration of the low-fidelity model or
+        passing a LFDNN object directly from this function.
         """
+        if lf_model is None:
+            # create the low-fidelity model
+            self.lf_model = LFDNN(
+                in_features=self.lf_configure["in_features"],
+                hidden_features=self.lf_configure["hidden_features"],
+                out_features=self.lf_configure["out_features"],
+                activation=self.lf_configure["activation"],
+                optimizer=self.lf_configure["optimizer"],
+                lr=self.lf_configure["lr"],
+                weight_decay=self.lf_configure["weight_decay"],
+                loss=self.lf_configure["loss"])
+        else:
+            self.lf_model = lf_model
 
-        # create the low-fidelity model
-        lf_model = LFDNN(in_features=self.lf_configure["in_features"],
-                         hidden_features=self.lf_configure["hidden_features"],
-                         out_features=self.lf_configure["out_features"],
-                         activation=self.lf_configure["activation"],
-                         optimizer=self.lf_configure["optimizer"],
-                         lr=self.lf_configure["lr"],
-                         weight_decay=self.lf_configure["weight_decay"],
-                         loss=self.lf_configure["loss"])
+    def define_hf_model(self, hf_model: Any = None) -> None:
+        """create the high-fidelity model, it can be defined by using passing a
+        dictionary containing the configuration of the high-fidelity model or
+        passing a BNNWrapper object directly from this function.
 
-        return lf_model
-
-    def _hf_model(self) -> BNNWrapper:
-        """create the high-fidelity model
-
-        Returns
-        -------
-        BNNWrapper
-            a BNNWrapper object
         """
-
-        # create the high-fidelity model
-        hf_model = BNNWrapper(in_features=self.hf_configure["in_features"],
-                              hidden_features=self.hf_configure["hidden_features"],
-                              out_features=self.hf_configure["out_features"],
-                              activation=self.hf_configure["activation"],
-                              lr=self.hf_configure["lr"],
-                              sigma=self.hf_configure["sigma"],
-                              )
-        return hf_model
+        if hf_model is None:
+            # create the high-fidelity model
+            self.hf_model = BNNWrapper(
+                in_features=self.hf_configure["in_features"],
+                hidden_features=self.hf_configure["hidden_features"],
+                out_features=self.hf_configure["out_features"],
+                activation=self.hf_configure["activation"],
+                lr=self.hf_configure["lr"],
+                sigma=self.hf_configure["sigma"],
+            )
+        else:
+            self.hf_model = hf_model
 
     def train(self,
               samples: dict,
@@ -104,19 +104,19 @@ class MFDNNBNN:
                                        "sample_freq": 100,
                                        "print_info": True,
                                        "burn_in_epochs": 1000}):
-        """_summary_
+        """train the multi-fidelity DNN-BNN framework
 
         Parameters
         ----------
         samples : dict
-            _description_
+            a dictionary containing the low-fidelity and high-fidelity samples
         responses : dict
-            _description_
-        lf_train_config : _type_, optional
-            _description_, by default {"batch_size": None,
+            a dictionary containing the low-fidelity and high-fidelity responses
+        lf_train_config : dict, optional
+            low fidelity training configuration, by default {"batch_size": None,
             "num_epochs": 1000, "print_iter": 100}
-        hf_train_config : _type_, optional
-            _description_, by default {"num_epochs": 10000,
+        hf_train_config : dict, optional
+            high fidelity training configuration, by default {"num_epochs": 10000,
             "sample_freq": 100, "print_info": True, "burn_in_epochs": 1000}
         """
         # get the low-fidelity samples
@@ -153,14 +153,13 @@ class MFDNNBNN:
                             print_info=hf_train_config["print_info"],
                             burn_in_epochs=hf_train_config["burn_in_epochs"])
 
-    def predict(self,
-                x: torch.Tensor):
-        """_summary_
+    def predict(self, x: torch.Tensor):
+        """predict the high fidelity output of the multi-fidelity DNN-BNN framework
 
         Parameters
         ----------
         x : torch.Tensor
-            _description_
+            test input data
 
         Returns
         -------
@@ -237,17 +236,35 @@ class MFDNNBNN:
                             burn_in_epochs=burn_in_epochs)
 
     def _beta_optimize(self) -> np.ndarray:
+        """optimize the beta, the beta is the parameter determining how much the
+        low-fidelity model is trusted in the multi-fidelity DNN-BNN framework. 
+        The beta is optimized by minimizing the error between the high-fidelity
+        and low-fidelity model.
 
-      # optimize the beta
-        x0 = np.random.uniform(self.beta_bounds[0], self.beta_bounds[1], 1)
-        optRes = minimize(
-            self._eval_error,
-            x0=x0,
-            method="L-BFGS-B",
-            bounds=np.array([self.beta_bounds]),
-        )
+        Returns
+        -------
+        np.ndarray
+            the optimized beta
+        """
 
-        beta = optRes.x
+        # optimize the beta
+        n_trials = self.optimizer_restart + 1
+        optimum_value = float("inf")
+        for _ in range(n_trials):
+            x0 = np.random.uniform(
+                self.beta_bounds[0],
+                self.beta_bounds[1],
+                1,
+            )
+            optRes = minimize(
+                self._eval_error,
+                x0=x0,
+                method="L-BFGS-B",
+                bounds=np.array([self.beta_bounds]),
+            )
+            if optRes.fun < optimum_value:
+                optimum_value = optRes.fun
+                beta = optRes.x
 
         return beta
 
@@ -275,73 +292,3 @@ class MFDNNBNN:
         sum_error = np.sum(error**2, axis=1)
 
         return sum_error
-
-
-# # test the MFDNNBNN class
-# if __name__ == "__main__":
-#     # create the configuration of the low-fidelity model
-#     import numpy as np
-#     lf_configure = {"in_features": 1,
-#                     "hidden_features": [20, 20, 20],
-#                     "out_features": 1,
-#                     "activation": "Tanh",
-#                     "optimizer": "Adam",
-#                     "lr": 0.01,
-#                     "weight_decay": 0.001,
-#                     "loss": "mse"}
-#     # create the configuration of the high-fidelity model
-#     hf_configure = {"in_features": 1,
-#                     "hidden_features": [50, 50],
-#                     "out_features": 1,
-#                     "activation": "Tanh",
-#                     "lr": 0.001,
-#                     "sigma": 0.3}
-#     # create the MFDNNBNN object
-#     mfdnnbnn = MFDNNBNN(lf_configure=lf_configure,
-#                         hf_configure=hf_configure)
-
-#     # use multi-fidelity forrester function to test the performance of the MFDNNBNN class
-#     lf_samples = torch.linspace(0, 1, 200).reshape(-1, 1)
-#     print(lf_samples)
-#     hf_samples = lf_samples[::20]  # sample every 20 points
-
-#     hf_responses = (6 * hf_samples - 2) ** 2 * torch.sin(12 * hf_samples - 4) + \
-#         torch.randn(hf_samples.shape) * 0.3
-
-#     # lf responses has bias term ()
-#     lf_responses = (6 * lf_samples - 2) ** 2 * torch.sin(12 * lf_samples - 4) + \
-#         torch.randn(lf_samples.shape) * 0.3 + 10 * (lf_samples - 0.5) - 5
-
-#     samples = {"lf_samples": lf_samples,
-#                "hf_samples": hf_samples}
-
-#     responses = {"lf_responses": lf_responses,
-#                  "hf_responses": hf_responses}
-#     # train the MFDNNBNN object
-#     mfdnnbnn.train(samples=samples,
-#                    responses=responses)
-#     # predict the MFDNNBNN object
-#     y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(
-#         x=torch.linspace(-1, 2, 1000).reshape(-1, 1))
-#     # lf prediction
-#     lf_y = mfdnnbnn.lf_model.forward(
-#         torch.linspace(-1, 2, 1000).reshape(-1, 1))
-#     # print the prediction
-
-#     # plot
-#     import matplotlib.pyplot as plt
-#     plt.figure()
-#     plt.plot(lf_samples, lf_responses, 'x', label="lf")
-#     plt.plot(hf_samples, hf_responses, 'o', label="hf")
-#     # plot lf prediction
-#     plt.plot(torch.linspace(-1, 2, 1000).numpy(),
-#              lf_y.detach().numpy(), label="lf prediction")
-#     plt.plot(torch.linspace(-1, 2, 1000).numpy(), y, label="hf prediction")
-#     plt.fill_between(torch.linspace(-1, 2, 1000).numpy(),
-#                      (y - 2*total_unc).reshape(-1),
-#                      (y + 2*total_unc).reshape(-1),
-#                      alpha=0.5,
-#                      label="total uncertainty")
-#     plt.legend()
-#     plt.savefig("mfdnnbnn.png", bbox_inches='tight', dpi=300)
-#     plt.show()

@@ -8,11 +8,11 @@ from mfbml.methods.mf_dnn_bnn import MFDNNBNN
 from mfbml.problem_sets.torch_problems import Forrester1b, MengCase1
 
 # define function
-func = Forrester1b(noise_std=0.3)
+func = MengCase1(noise_std=0.05)
 num_dim = 1
 
 # use multi-fidelity forrester function to test the performance of the MFDNNBNN class
-lf_samples = torch.linspace(0, 1, 101).reshape(-1, 1)
+lf_samples = torch.linspace(0, 1, 201).reshape(-1, 1)
 hf_samples = lf_samples[::5]  # sample every 5 points
 
 
@@ -27,7 +27,7 @@ lf_configure = {"in_features": 1,
                 "activation": "Tanh",
                 "optimizer": "Adam",
                 "lr": 0.001,
-                "weight_decay": 0.001,
+                "weight_decay": 0.000001,
                 "loss": "mse"}
 # create the configuration of the high-fidelity model
 hf_configure = {"in_features": 1,
@@ -35,11 +35,11 @@ hf_configure = {"in_features": 1,
                 "out_features": 1,
                 "activation": "Tanh",
                 "lr": 0.001,
-                "sigma": 0.3}
+                "sigma": 0.05}
 # create the MFDNNBNN object
 mfdnnbnn = MFDNNBNN(lf_configure=lf_configure,
                     hf_configure=hf_configure,
-                    beta_optimize=True,
+                    beta_optimize=False,
                     beta_bounds=[-5, 5])
 
 
@@ -51,12 +51,12 @@ responses = {"lf": lf_responses,
 
 # lf train config
 lf_train_config = {"batch_size": None,
-                   "num_epochs": 20000,
+                   "num_epochs": 50000,
                    "print_iter": 100}
-hf_train_config = {"num_epochs": 10000,
+hf_train_config = {"num_epochs": 50000,
                    "sample_freq": 100,
                    "print_info": True,
-                   "burn_in_epochs": 2000}
+                   "burn_in_epochs": 30000}
 
 # train the MFDNNBNN object
 mfdnnbnn.train(samples=samples,
