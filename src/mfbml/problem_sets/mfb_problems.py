@@ -1,7 +1,6 @@
 # this script is used for implementing mfb test suites from Handing Wang's 2018
 # paper
 
-from typing import Any
 
 import torch
 
@@ -115,16 +114,3 @@ class MFB1:
             self.hf(x, noise_lf * 0.1) + noise_lf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
-
-
-# test the function
-if __name__ == "__main__":
-    # define the input
-    x = torch.linspace(-1, 1, 1000).reshape(-1, 1)
-    # evaluate the function
-    obj = hf(x, 0)
-    # plot the function
-    import matplotlib.pyplot as plt
-    plt.plot(x, obj)
-    plt.plot(x, hf(x, 0.1), 'x')
-    plt.show()
