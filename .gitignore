@@ -71,6 +71,10 @@ venv
 **/*.ipynb_checkpoints/
 
 
+# hpc cluster files 
+out.*
+err.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
