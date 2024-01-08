@@ -44,7 +44,7 @@ def create_experiment_data() -> None:
     seed_sets = [i for i in range(1, 31)]
 
     # define the number of lf samples
-    num_samples = [10 + 2*i for i in range(1, 6)]
+    num_samples = [10 + 2*i for i in range(0, 6)]
 
     # create design variables
     design_variables = []
@@ -75,7 +75,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=900, seed=1)
+    data.sample(sampler='random', n_samples=1080, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
