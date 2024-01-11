@@ -265,36 +265,3 @@ class LFDNN(MLP):
         """
 
         self.loss = loss
-
-
-# write code to test LFDNN class
-if __name__ == "__main__":
-
-    # test on the MengCase1 function
-
-    # create the model
-    model = LFDNN(in_features=1,
-                  hidden_features=[20, 20, 20],
-                  out_features=1,
-                  activation="ReLU",
-                  optimizer="Adam",
-                  lr=0.001,
-                  weight_decay=0.01,
-                  loss="mse")
-
-    # train the model
-    model.train(x_train, y_train, batch_size=100, num_epoch=10000)
-
-    # create the test data
-    x_test = torch.linspace(-1, 1, 100).reshape(-1, 1)
-    y_test = torch.sin(x_test * 2 * torch.pi)
-
-    # test the model
-    y_pred = model.forward(x_test)
-    import matplotlib.pyplot as plt
-
-    # plot the results
-    plt.plot(x_test, y_test, label="ground truth")
-    plt.plot(x_test, y_pred.detach().numpy(), label="prediction")
-    plt.legend()
-    plt.show()  # type: ignore

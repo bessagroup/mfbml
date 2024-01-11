@@ -190,23 +190,3 @@ class Forrester1b:
             noise_lf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
-
-
-# # test case
-# if __name__ == '__main__':
-#     import matplotlib.pyplot as plt
-#     import numpy as np
-
-#     # create problem
-#     problem = Forrester1b(noise_std=0.0)
-
-#     # create data
-#     x = torch.linspace(0, 1, 1000).reshape(-1, 1)
-#     y_hf = problem.hf(x)
-#     y_lf = problem.lf(x)
-
-#     # plot
-#     plt.plot(x, y_hf, label='hf')
-#     plt.plot(x, y_lf, label='lf')
-#     plt.legend()
-#     plt.show()
