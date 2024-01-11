@@ -272,8 +272,12 @@ def main() -> None:
         create_experiment_data()
         execute_experimentdata()
     elif f3dasm.HPC_JOBID > 0:
-        sleep(3*f3dasm.HPC_JOBID)
-        execute_experimentdata()
+        try:
+            sleep(3*f3dasm.HPC_JOBID)
+            execute_experimentdata()
+        except:
+            sleep(4*f3dasm.HPC_JOBID)
+            execute_experimentdata()           
 
 
 if __name__ == '__main__':

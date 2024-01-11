@@ -8,6 +8,7 @@
 import time
 from time import sleep
 from typing import Any
+import pandas
 
 import f3dasm
 import numpy as np
@@ -256,12 +257,12 @@ class MFBMLExperiments(DataGenerator):
 
 def execute_experimentdata() -> None:
 
-    # load data from file
     data = f3dasm.ExperimentData.from_file(
         filename='exp_{}'.format('hk'))
     # run the function
     data.evaluate(MFBMLExperiments(), mode='cluster')
 
+  
 
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
@@ -271,8 +272,12 @@ def main() -> None:
         create_experiment_data()
         execute_experimentdata()
     elif f3dasm.HPC_JOBID > 0:
-        sleep(3*f3dasm.HPC_JOBID)
-        execute_experimentdata()
+        try: 
+            sleep(3*f3dasm.HPC_JOBID)
+            execute_experimentdata()
+        except:
+            sleep(3*f3dasm.HPC_JOBID)
+            execute_experimentdata()
 
 
 if __name__ == '__main__':

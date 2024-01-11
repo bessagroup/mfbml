@@ -296,7 +296,7 @@ def execute_experimentdata() -> None:
 
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
-    f3dasm.HPC_JOBID = 0
+    # f3dasm.HPC_JOBID = 0
     if f3dasm.HPC_JOBID == 0:
         create_experiment_data()
         execute_experimentdata()
