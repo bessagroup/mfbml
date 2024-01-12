@@ -5,38 +5,20 @@
 import torch
 
 
-def hf_function(x: torch.Tensor, noise_level: float) -> torch.Tensor:
-    """high fidelity function
-
-    Parameters
-    ----------
-    x : torch.Tensor
-        input
-    noise_level : float
-        noise level
-
-    Returns
-    -------
-    torch.Tensor
-        response
-    """
-    # evaluate the function
-    obj = (x**2 + 1 - torch.cos(10*torch.pi*x)).sum(dim=1, keepdim=True)
-
-    # add noise
-    obj += noise_level * torch.randn(obj.shape)
-
-    return obj
-
-
-# mfb1 function
 class MFB1:
     """class for mfb1 function"""
 
-    def __init__(self, noise_std: float) -> None:
+    def __init__(self,
+                 num_dim: int,
+                 noise_std: float,
+                 phi: float) -> None:
         """constructor"""
+        # get the dimension
+        self.num_dim = num_dim
         # set the noise std
         self.noise_std = noise_std
+        # set the phi
+        self.phi = phi
 
     def __call__(self, samples: dict) -> dict:
         """evaluate the function
@@ -83,7 +65,7 @@ class MFB1:
         if noise_hf is None:  # use the default noise
             noise_hf = self.noise_std
 
-        obj = torch.sin(8*torch.pi*x)**2*(x - torch.sqrt(torch.Tensor([2.0]))) + \
+        obj = (x**2+1-torch.cos(10*torch.pi*x)).sum(dim=1, keepdim=True) + \
             noise_hf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
@@ -110,7 +92,74 @@ class MFB1:
         if noise_lf is None:  # use the default noise
             noise_lf = self.noise_std
 
-        obj = 0.5 * self.hf(x, noise_lf) + 0.5 * \
-            self.hf(x, noise_lf * 0.1) + noise_lf * torch.randn(x.shape)
+        obj = self.hf(x, noise_hf=0.0) + self.error(x) + \
+            noise_lf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
+
+    def error(self, x: torch.Tensor) -> torch.Tensor:
+        """error function
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input
+
+        Returns
+        -------
+        torch.Tensor
+            outputs
+        """
+
+        obj = self.a*torch.cos(self.w*x + self.b +
+                               torch.pi).sum(dim=1, keepdim=True)
+
+        return obj.reshape(-1, 1)
+
+    @property
+    def a(self) -> float:
+        """a function
+
+        Returns
+        -------
+        float
+            a
+        """
+
+        return self.theta
+
+    @property
+    def b(self) -> float:
+        """b function
+
+        Returns
+        -------
+        float
+            b
+        """
+
+        return 0.5*torch.pi*self.theta
+
+    @property
+    def w(self) -> float:
+        """w function
+
+        Returns
+        -------
+        float
+            w
+        """
+
+        return 10.0*torch.pi*self.theta
+
+    @ property
+    def theta(self) -> float:
+        """theta function
+
+        Returns
+        -------
+        float
+            theta
+        """
+
+        return 1 - 0.0001 * self.phi
