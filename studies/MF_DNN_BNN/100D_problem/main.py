@@ -7,9 +7,10 @@ import torch
 from mfbml.methods.mf_dnn_bnn import MFDNNBNN
 from mfbml.problem_sets.mfb_problems import MFB1
 
+
 # define function
-func = MFB1(noise_std=0.1, num_dim=1, phi=5000)
-num_dim = 1
+func = MFB1(noise_std=0.1, num_dim=1, phi=7000)
+num_dim = 10
 
 # use multi-fidelity forrester function to test the performance of the MFDNNBNN class
 lf_samples = torch.linspace(-1, 1, 401).reshape(-1, 1)
@@ -71,23 +72,3 @@ y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(
 lf_y = mfdnnbnn.lf_model.forward(
     torch.linspace(-1, 1, 1000).reshape(-1, 1))
 # print the prediction
-
-# plot
-
-plt.figure()
-plt.plot(lf_samples, lf_responses, 'x', label="lf")
-plt.plot(hf_samples, hf_responses, 'o', label="hf")
-# plot lf prediction
-plt.plot(torch.linspace(-1, 1, 1000).numpy(),
-         lf_y.detach().numpy(), label="lf prediction")
-plt.plot(torch.linspace(-1, 1, 1000).numpy(), y, label="hf prediction")
-plt.plot(torch.linspace(-1, 1, 1000).numpy(), func.hf(torch.linspace(
-    -1, 1, 1000).reshape(-1, 1)).detach().numpy(), label="hf ground truth")
-plt.fill_between(torch.linspace(-1, 1, 1000).numpy(),
-                 (y - 2*epistemic).reshape(-1),
-                 (y + 2*epistemic).reshape(-1),
-                 alpha=0.5,
-                 label="total uncertainty")
-plt.legend()
-plt.savefig("mfdnnbnn.png", bbox_inches='tight', dpi=300)
-plt.show()
