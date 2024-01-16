@@ -99,7 +99,9 @@ class MFDNNBNN:
               responses: dict,
               lf_train_config: dict = {"batch_size": None,
                                        "num_epochs": 50000,
-                                       "print_iter": 1000},
+                                       "print_iter": 1000,
+                                       "data_split": True,
+                                       },
               hf_train_config: dict = {"num_epochs": 10000,
                                        "sample_freq": 100,
                                        "print_info": True,
@@ -133,7 +135,8 @@ class MFDNNBNN:
                             y=responses["lf"],
                             batch_size=lf_train_config["batch_size"],
                             num_epochs=lf_train_config["num_epochs"],
-                            print_iter=lf_train_config["print_iter"])
+                            print_iter=lf_train_config["print_iter"],
+                            data_split=lf_train_config["data_split"])
         # optimize the beta
         if self.beta_optimize:
             self.beta = self._beta_optimize()
@@ -180,7 +183,8 @@ class MFDNNBNN:
                        y: torch.Tensor,
                        batch_size: int = None,  # type: ignore
                        num_epochs: int = 10000,
-                       print_iter: int = 100
+                       print_iter: int = 100,
+                       data_split: bool = False
                        ) -> None:
         """train the low-fidelity model
 
@@ -201,7 +205,8 @@ class MFDNNBNN:
                             y=y,
                             batch_size=batch_size,
                             num_epoch=num_epochs,
-                            print_iter=print_iter)
+                            print_iter=print_iter,
+                            data_split=data_split)
 
     def train_hf_model(self,
                        x: torch.Tensor,

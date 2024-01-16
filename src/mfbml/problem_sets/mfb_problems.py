@@ -66,7 +66,7 @@ class MFB1:
             noise_hf = self.noise_std
 
         obj = (x**2+1-torch.cos(10*torch.pi*x)).sum(dim=1, keepdim=True) + \
-            noise_hf * torch.randn(x.shape)
+            noise_hf * torch.randn(x.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
@@ -93,7 +93,7 @@ class MFB1:
             noise_lf = self.noise_std
 
         obj = self.hf(x, noise_hf=0.0) + self.error(x) + \
-            noise_lf * torch.randn(x.shape)
+            noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
