@@ -192,6 +192,8 @@ class LFDNN(MLP):
             X_train, X_test, y_train, y_test = train_test_split(
                 x, y, test_size=0.2, random_state=42)
         else:
+            X_train = x
+            y_train = y
             print("No data split: use all data for training")
 
         # if batch size is not given, use all data for training
@@ -215,10 +217,12 @@ class LFDNN(MLP):
                 self.optimizer.step()
 
             # print the loss to the screen
-            if (epoch+1) % print_iter == 0:
+            if (epoch+1) % print_iter == 0 and self.data_split is True:
                 print("epoch: ", epoch + 1, "train loss: ", loss.item(),
                       "test loss: ",
                       self.loss(self.forward(X_test), y_test).item())
+            elif (epoch+1) % print_iter == 0 and self.data_split is False:
+                print("epoch: ", epoch + 1, "train loss: ", loss.item())
 
     def _get_optimizer(self) -> Any:
         """get optimizer according names

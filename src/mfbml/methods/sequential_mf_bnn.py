@@ -24,6 +24,7 @@ class SequentialMFBNN:
     """
 
     def __init__(self,
+                 design_space: torch.Tensor,
                  lf_configure: dict,
                  hf_configure: dict,) -> None:
         """initialize the multi-fidelity DNN-BNN framework
@@ -35,6 +36,8 @@ class SequentialMFBNN:
         hf_configure : dict
             a dictionary containing the configuration of high-fidelity model
         """
+        # get the design space of this problem
+        self.design_space = design_space
         # record the configuration of the low-fidelity model
         self.lf_configure = lf_configure
         self.hf_configure = hf_configure
@@ -87,7 +90,8 @@ class SequentialMFBNN:
               responses: dict,
               lf_train_config: dict = {"batch_size": None,
                                        "num_epochs": 50000,
-                                       "print_iter": 1000},
+                                       "print_iter": 1000,
+                                       "data_split": False},
               hf_train_config: dict = {"num_epochs": 10000,
                                        "sample_freq": 100,
                                        "print_info": True,
@@ -109,42 +113,52 @@ class SequentialMFBNN:
         """
         # get the low-fidelity samples
         self.lf_samples = samples["lf"]
+        self.lf_samples_scaled = self.normalize_inputs(self.lf_samples)
         # get the high-fidelity samples
         self.hf_samples = samples["hf"]
+        self.hf_samples_scaled = self.normalize_inputs(self.hf_samples)
         # get the low-fidelity responses
         self.lf_responses = responses["lf"]
+        self.lf_responses_scaled = self.normalize_lf_output(self.lf_responses)
         # get the high-fidelity responses
         self.hf_responses = responses["hf"]
+        self.hf_responses_scaled = self.normalize_hf_output(self.hf_responses)
+        # scale the noise for HF model
+        self.hf_model.sigma = self.hf_model.sigma / self.yh_std.numpy()
         # receive the low-fidelity training configuration
         self.lf_training_configure = lf_train_config
         # receive the high-fidelity training configuration
         self.hf_training_configure = hf_train_config
 
         # train the low-fidelity model
-        self.train_lf_model(x=samples["lf"],
-                            y=responses["lf"],
+        self.train_lf_model(x=self.lf_samples_scaled,
+                            y=self.lf_responses_scaled,
                             batch_size=lf_train_config["batch_size"],
                             num_epochs=lf_train_config["num_epochs"],
-                            print_iter=lf_train_config["print_iter"])
+                            print_iter=lf_train_config["print_iter"],
+                            data_split=lf_train_config["data_split"])
 
         # get the low-fidelity model prediction of the high-fidelity samples
         lf_hf_samples = self.lf_model.forward(samples["hf"])
+        # scale the low-fidelity model prediction
+        lf_hf_samples = (lf_hf_samples - self.yh_mean) / self.yh_std
 
         # concatenate xh and yh
-        xh_ylf = torch.concatenate((samples["hf"], lf_hf_samples), dim=1)
+        xh_ylf = torch.concatenate(
+            (self.hf_samples_scaled, lf_hf_samples), dim=1)
 
         # check the input dimension of the high-fidelity model
         self._check_hf_input_dimension()
         # train the high-fidelity model
         self.train_hf_model(x=xh_ylf,
-                            y=responses["hf"],
+                            y=self.hf_responses_scaled,
                             num_epochs=hf_train_config["num_epochs"],
                             sample_freq=hf_train_config["sample_freq"],
                             print_info=hf_train_config["print_info"],
                             burn_in_epochs=hf_train_config["burn_in_epochs"])
 
     def predict(self, x: torch.Tensor):
-        """predict the high fidelity output of the multi-fidelity DNN-BNN framework
+        """predict the high fidelity output of the  Meng's MF-BNN framework
 
         Parameters
         ----------
@@ -157,21 +171,60 @@ class SequentialMFBNN:
             _description_
         """
         # get the low-fidelity model prediction
-        lf_y = self.lf_model.forward(x)
+        lf_y = self.predict_lf(x, output_format="torch")
+        # scale the low-fidelity model prediction
+        lf_y = (lf_y - self.yh_mean) / self.yh_std
+        # scale the test input data
+        x_scale = self.normalize_inputs(x)
         # having the xh_ylf
-        xh_ylf = torch.concatenate((x, lf_y), dim=1)
+        xh_ylf = torch.concatenate((x_scale, lf_y), dim=1)
         # get the high-fidelity model prediction
         hf_mean, epistemic, total_unc, aleatoric = self.hf_model.predict(
             xh_ylf)
 
+        # scale back to the original scale
+        hf_mean = (hf_mean * self.yh_std + self.yh_mean).numpy()
+        epistemic = epistemic * self.yh_std.numpy()
+        total_unc = total_unc * self.yh_std.numpy()
+        aleatoric = aleatoric * self.yh_std.numpy()
+
         return hf_mean, epistemic, total_unc, aleatoric
+
+    def predict_lf(self, x: torch.Tensor,
+                   output_format: str = "torch") -> torch.Tensor | Any:
+        """predict the low fidelity output of the MF-DNN-BNN framework
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            test input data
+
+        Returns
+        -------
+        torch.Tensor
+            test output data
+
+        """
+        x_scaled = self.normalize_inputs(x)
+        # get the low-fidelity model prediction
+        lf_y_scaled = self.lf_model.forward(x_scaled)
+        # scale back to the original scale
+        lf_y = lf_y_scaled * self.yl_std + self.yl_mean
+
+        if output_format == "torch":
+            return lf_y
+        elif output_format == "numpy":
+            return lf_y.detach().numpy()
+
+        return lf_y
 
     def train_lf_model(self,
                        x: torch.Tensor,
                        y: torch.Tensor,
                        batch_size: int = None,  # type: ignore
                        num_epochs: int = 10000,
-                       print_iter: int = 100
+                       print_iter: int = 100,
+                       data_split: bool = False
                        ) -> None:
         """train the low-fidelity model
 
@@ -192,7 +245,8 @@ class SequentialMFBNN:
                             y=y,
                             batch_size=batch_size,
                             num_epoch=num_epochs,
-                            print_iter=print_iter)
+                            print_iter=print_iter,
+                            data_split=data_split)
 
     def train_hf_model(self,
                        x: torch.Tensor,
@@ -236,3 +290,59 @@ class SequentialMFBNN:
                 "the input dimension of the high-fidelity model should equal"
                 "to the sum of the input dimension of the high-fidelity model"
                 "and the output dimension of the low-fidelity model")
+
+    def normalize_inputs(self, x: torch.Tensor) -> torch.Tensor:
+        """normalize the input data
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input data
+
+        Returns
+        -------
+        torch.Tensor
+            normalized input data
+        """
+        x = (x - self.design_space[:, 0]) / \
+            (self.design_space[:, 1] - self.design_space[:, 0])
+
+        return x
+
+    def normalize_lf_output(self, y: torch.Tensor) -> torch.Tensor:
+        """normalize the output data of the low-fidelity model
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            output data of the low-fidelity model
+
+        Returns
+        -------
+        torch.Tensor
+            normalized output data of the low-fidelity model
+        """
+        self.yl_mean = torch.mean(y)
+        self.yl_std = torch.std(y)
+        y = (y - self.yl_mean) / self.yl_std
+
+        return y
+
+    def normalize_hf_output(self, y: torch.Tensor) -> torch.Tensor:
+        """normalize the output data of the high-fidelity model
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            output data of the high-fidelity model
+
+        Returns
+        -------
+        torch.Tensor
+            normalized output data of the high-fidelity model
+        """
+        self.yh_mean = torch.mean(y)
+        self.yh_std = torch.std(y)
+        y = (y - self.yh_mean) / self.yh_std
+
+        return y

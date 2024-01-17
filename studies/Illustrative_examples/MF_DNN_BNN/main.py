@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from mfbml.methods.mf_dnn_bnn import MFDNNBNN
-from mfbml.problem_sets.torch_problems import Forrester1b, MengCase1
+from mfbml.problem_sets.mfb_problems import Forrester1b, MengCase1
 
 # define function
 func = MengCase1(noise_std=0.05)
@@ -37,7 +37,8 @@ hf_configure = {"in_features": 1,
                 "lr": 0.001,
                 "sigma": 0.05}
 # create the MFDNNBNN object
-mfdnnbnn = MFDNNBNN(lf_configure=lf_configure,
+mfdnnbnn = MFDNNBNN(design_space=torch.tile(torch.Tensor([0, 1]), (num_dim, 1)),
+                    lf_configure=lf_configure,
                     hf_configure=hf_configure,
                     beta_optimize=False,
                     beta_bounds=[-5, 5])
@@ -50,13 +51,14 @@ responses = {"lf": lf_responses,
              "hf": hf_responses}
 
 # lf train config
-lf_train_config = {"batch_size": None,
-                   "num_epochs": 50000,
-                   "print_iter": 100}
-hf_train_config = {"num_epochs": 50000,
+lf_train_config = {"batch_size": 1000,
+                   "num_epochs": 5000,
+                   "print_iter": 100,
+                   "data_split": True}
+hf_train_config = {"num_epochs": 20000,
                    "sample_freq": 100,
                    "print_info": True,
-                   "burn_in_epochs": 30000}
+                   "burn_in_epochs": 10000}
 
 # train the MFDNNBNN object
 mfdnnbnn.train(samples=samples,
@@ -68,10 +70,10 @@ mfdnnbnn.train(samples=samples,
 y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(
     x=torch.linspace(0, 1, 1000).reshape(-1, 1))
 # lf prediction
-lf_y = mfdnnbnn.lf_model.forward(
-    torch.linspace(0, 1, 1000).reshape(-1, 1))
+lf_y = mfdnnbnn.predict_lf(torch.linspace(0, 1, 1000).reshape(-1, 1))
 # print the prediction
-
+print(f"aleatoric: {aleatoric}")
+print(f"epistemic: {epistemic}")
 # plot
 
 plt.figure()
