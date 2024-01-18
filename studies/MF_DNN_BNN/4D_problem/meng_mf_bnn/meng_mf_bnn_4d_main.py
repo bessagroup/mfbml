@@ -15,8 +15,10 @@ from mfbml.methods.sequential_mf_bnn import SequentialMFBNN
 
 def main():
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data.pkl", "rb"))
-    print(data["hf_samples"].shape)
+    data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
+    print(f"HF samples: {data['hf_samples'].shape}")
+    print(f"LF samples: {data['lf_samples'].shape}")
+
     # get the data
     hf_samples = data["hf_samples"]
     lf_samples = data["lf_samples"]
@@ -39,21 +41,21 @@ def main():
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 4,
-                    "hidden_features": [50, 50],
+                    "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
-                    "lr": 0.001,
+                    "lr": 0.0001,
                     "weight_decay": 0.000001,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
     hf_configure = {"in_features": 5,
-                    "hidden_features": [50],
+                    "hidden_features": [50, 50],
                     "out_features": 1,
                     "activation": "Tanh",
                     "lr": 0.001,
-                    "sigma": 0.01}
+                    "sigma": 0.05}
 
     # create the MFDNNBNN object
     mfdnnbnn = SequentialMFBNN(design_space=design_space,
@@ -62,13 +64,13 @@ def main():
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 10000,
+                       "num_epochs": 50000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 5000}
+                       "burn_in_epochs": 20000}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -79,9 +81,6 @@ def main():
 
     # predict the MFDNNBNN object
     y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(x=test_samples)
-    print(f"aleatoric: {aleatoric}")
-    print(f"epistemic: {epistemic}")
-    print(f"total_unc: {total_unc}")
     # lf prediction
     lf_y = mfdnnbnn.predict_lf(x=test_samples, output_format="numpy")
 
@@ -111,7 +110,7 @@ def main():
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("results.csv", index=False)
+    df.to_csv("meng_mf_bnn_4D_problem.csv", index=False)
 
 
 if __name__ == "__main__":

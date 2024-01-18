@@ -412,7 +412,7 @@ class BNNWrapper:
 
         noise_p = self.sigma
         print("==================================================")
-        print("epoch: %5d/%5d" % (iter + 1, self.num_epochs,))
+        print("epoch: %5d/%5d" % (iter, self.num_epochs,))
         print("nll_loss: %2.3f, prior_loss: %2.3f, total: %2.3f" %
               (self.nll_loss_train[iter],
                self.prior_loss_train[iter],

@@ -192,7 +192,7 @@ class SequentialMFBNN:
         return hf_mean, epistemic, total_unc, aleatoric
 
     def predict_lf(self, x: torch.Tensor,
-                   output_format: str = "torch") -> torch.Tensor | Any:
+                   output_format: str = "torch") -> torch.Tensor | np.ndarray:
         """predict the low fidelity output of the MF-DNN-BNN framework
 
         Parameters

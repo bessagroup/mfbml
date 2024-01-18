@@ -8,13 +8,13 @@ from scipy.stats.qmc import LatinHypercube
 from mfbml.problem_sets.mfb_problems import Meng4D
 
 
-def get_samples() -> np.ndarray:
+def get_samples() -> None:
     # define function information
     noise_std = 0.05
 
     # define samples information
     num_hf = 150
-    num_lf = 5000
+    num_lf = 25000
     num_test = 2000
 
     # initialize the problem
@@ -30,13 +30,13 @@ def get_samples() -> np.ndarray:
     lf_samples = torch.tensor(lf_samples, dtype=torch.float32)
     test_samples = torch.tensor(test_samples, dtype=torch.float32)
     # get the function values
-    hf_responses = problem.hf(hf_samples, noise_hf=0.01)
-    lf_responses = problem.lf(lf_samples, noise_lf=0.05)
+    hf_responses = problem.hf(hf_samples)
+    lf_responses = problem.lf(lf_samples)
 
     # noiseless test responses
     test_responses_noiseless = problem.hf(test_samples, noise_hf=0.0)
     # noisy test responses
-    test_responses_noisy = problem.hf(test_samples, noise_hf=0.01)
+    test_responses_noisy = problem.hf(test_samples, noise_hf=0.05)
     # calculate the noise response for lf
     lf_responses_noisy = problem.lf(test_samples, noise_lf=0.05)
     #  calculate the noiseless response for lf
@@ -56,7 +56,7 @@ def get_samples() -> np.ndarray:
 
     }
     # save the data to pickle file
-    with open("data.pkl", "wb") as f:
+    with open("data_4d_example.pkl", "wb") as f:
         pickle.dump(data, f)
 
 

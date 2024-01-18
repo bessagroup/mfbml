@@ -15,8 +15,10 @@ from mfbml.methods.mf_dnn_bnn import MFDNNBNN
 
 def main():
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data.pkl", "rb"))
-    print(data["hf_samples"].shape)
+    data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
+    # print the shape of the data
+    print(f"Number of HF data: {data['hf_samples'].shape}")
+    print(f"Number of LF data: {data['lf_samples'].shape}")
     # get the data
     hf_samples = data["hf_samples"]
     lf_samples = data["lf_samples"]
@@ -39,12 +41,12 @@ def main():
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 4,
-                    "hidden_features": [50, 50],
+                    "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
                     "lr": 0.001,
-                    "weight_decay": 0.000001,
+                    "weight_decay": 0.00001,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
@@ -53,7 +55,7 @@ def main():
                     "out_features": 1,
                     "activation": "Tanh",
                     "lr": 0.001,
-                    "sigma": 0.01}
+                    "sigma": 0.05}
 
     # create the MFDNNBNN object
     mfdnnbnn = MFDNNBNN(design_space=design_space,
@@ -61,16 +63,16 @@ def main():
                         hf_configure=hf_configure,
                         beta_optimize=False,
                         beta_bounds=[-5, 5])
-    # mfdnnbnn.beta = np.array([1.2])
+    mfdnnbnn.beta = np.array([0.8])
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 10000,
+                       "num_epochs": 20000,
                        "print_iter": 100,
                        "data_split": True}
-    hf_train_config = {"num_epochs": 50000,
+    hf_train_config = {"num_epochs": 20000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 20000}
+                       "burn_in_epochs": 5000}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -81,9 +83,9 @@ def main():
 
     # predict the MFDNNBNN object
     y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(x=test_samples)
-    print(f"aleatoric: {aleatoric}")
-    print(f"epistemic: {epistemic}")
-    print(f"total_unc: {total_unc}")
+    # print(f"aleatoric: {aleatoric}")
+    # print(f"epistemic: {epistemic}")
+    # print(f"total_unc: {total_unc}")
     # lf prediction
     lf_y = mfdnnbnn.predict_lf(x=test_samples, output_format="numpy")
 
@@ -111,9 +113,19 @@ def main():
                "lf_nrmse": lf_nrmse,
                "lf_r2": lf_r2}
 
+    # print the results
+    print("===================== Results: =====================")
+    print(f"nmae: {nmae}")
+    print(f"nrmse: {nrmse}")
+    print(f"r2: {r2}")
+    print(f"log_likelihood: {log_likelihood}")
+    print(f"lf_nmae: {lf_nmae}")
+    print(f"lf_nrmse: {lf_nrmse}")
+    print(f"lf_r2: {lf_r2}")
+
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("results.csv", index=False)
+    df.to_csv("results_mf_dnn_bnn_4D_problem.csv", index=False)
 
 
 if __name__ == "__main__":
