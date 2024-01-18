@@ -184,7 +184,7 @@ class MFDNNBNN:
             _description_
         """
         # get the low-fidelity model prediction
-        lf_y = self.predict_lf(x, output_format="tensor")
+        lf_y = self.predict_lf(x, output_format="torch")
         # scale the lf_y to HF scale
         lf_y = (lf_y - self.yh_mean) / self.yh_std
         # scale the input data

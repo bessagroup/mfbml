@@ -139,7 +139,8 @@ class SequentialMFBNN:
                             data_split=lf_train_config["data_split"])
 
         # get the low-fidelity model prediction of the high-fidelity samples
-        lf_hf_samples = self.lf_model.forward(samples["hf"])
+        lf_hf_samples = self.predict_lf(
+            x=self.hf_samples, output_format="torch")
         # scale the low-fidelity model prediction
         lf_hf_samples = (lf_hf_samples - self.yh_mean) / self.yh_std
 
@@ -183,7 +184,7 @@ class SequentialMFBNN:
             xh_ylf)
 
         # scale back to the original scale
-        hf_mean = (hf_mean * self.yh_std + self.yh_mean).numpy()
+        hf_mean = hf_mean * self.yh_std.numpy() + self.yh_mean.numpy()
         epistemic = epistemic * self.yh_std.numpy()
         total_unc = total_unc * self.yh_std.numpy()
         aleatoric = aleatoric * self.yh_std.numpy()

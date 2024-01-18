@@ -1,8 +1,6 @@
 
 import pickle
-from typing import List, Tuple
 
-import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import r2_score

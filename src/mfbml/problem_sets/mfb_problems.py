@@ -643,3 +643,96 @@ class Meng20D:
             noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
+
+
+class Meng4D:
+
+    def __init__(self,
+                 noise_std: float = 0.0) -> None:
+        """get required information
+
+        Parameters
+        ----------
+        noise_std : float, optional
+            noise level, by default 0.0
+        """
+
+        self.noise_std = noise_std
+        self.num_dim = 4
+
+    def __call__(self, samples: dict) -> dict:
+        """evaluate the problem
+
+        Parameters
+        ----------
+        samples : dict
+            samples
+
+        Returns
+        -------
+        dict
+            responses
+        """
+
+        # get samples
+        hf_samples = samples["hf"]
+        lf_samples = samples["lf"]
+
+        # evaluate the problem
+        responses = {"hf": self.hf(hf_samples),
+                     "lf": self.lf(lf_samples)}
+
+        return responses
+
+    def hf(self, x: torch.Tensor, noise_hf: float = None) -> torch.Tensor:
+        """high fidelity function
+
+        Parameters
+        ----------
+        x : torch.Tensor
+              high fidelity input x
+        noise_hf : float, optional
+              noise std, by default None
+
+        Returns
+        -------
+        torch.Tensor
+              outputs
+        """
+
+        if noise_hf is None:
+            noise_hf = self.noise_std
+
+        # use a for loop to compute the sum
+        obj = 0.5*(0.1*torch.exp(x[:, 0] + x[:, 1]) +
+                   x[:, 3]*torch.sin(12*torch.pi*x[:, 2]) + x[:, 2])
+        # reshape the obj
+        obj = obj.reshape(-1, 1)
+        # add noise
+        obj = obj + noise_hf * torch.randn(x.shape[0]).reshape(-1, 1)
+
+        return obj.reshape(-1, 1)
+
+    def lf(self, x: torch.Tensor, noise_lf: float = None) -> torch.Tensor:
+        """low fidelity function
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input tensor
+        noise_lf : float, optional
+            noise standard deviation, by default None
+
+        Returns
+        -------
+        torch.Tensor
+              output tensor
+        """
+
+        if noise_lf is None:
+            noise_lf = self.noise_std
+
+        obj = 1.2*self.hf(x, noise_hf=0.0) - 0.5 + \
+            noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
+
+        return obj.reshape(-1, 1)

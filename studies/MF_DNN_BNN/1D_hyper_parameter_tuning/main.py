@@ -8,7 +8,7 @@ from mfbml.get_methods.accuracy_metrics import (log_likelihood_value,
                                                 normalized_mae,
                                                 normalized_rmse)
 from mfbml.methods.mf_dnn_bnn import MFDNNBNN
-from mfbml.problem_sets.torch_problems import MengCase1
+from mfbml.problem_sets.mfb_problems import MengCase1
 
 
 def function_fit(beta: float) -> float:

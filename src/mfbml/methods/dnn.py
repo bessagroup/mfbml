@@ -247,6 +247,10 @@ class LFDNN(MLP):
             return torch.optim.SGD(self.net.parameters(),
                                    lr=self.lr,
                                    weight_decay=self.weight_decay)
+        elif self.optimizer_name == "Adammax":
+            return torch.optim.Adamax(self.net.parameters(),
+                                      lr=self.lr,
+                                      weight_decay=self.weight_decay)
         else:
             raise ValueError(
                 "the optimizer is not implemented in this framework!"

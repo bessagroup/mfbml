@@ -41,10 +41,10 @@ def main():
     lf_configure = {"in_features": 20,
                     "hidden_features": [128, 128, 128, 128],
                     "out_features": 1,
-                    "activation": "Tanh",
+                    "activation": "ReLU",
                     "optimizer": "Adam",
-                    "lr": 0.0001,
-                    "weight_decay": 0.00001,
+                    "lr": 0.001,
+                    "weight_decay": 0.000001,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model

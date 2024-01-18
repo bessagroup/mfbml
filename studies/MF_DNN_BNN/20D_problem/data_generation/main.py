@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from scipy.stats.qmc import LatinHypercube
 
-from mfbml.problem_sets.mfb_problems import Rosenbrock
+from mfbml.problem_sets.mfb_problems import Meng20D
 
 
 def scale_samples(samples: np.ndarray, design_space: np.ndarray) -> np.ndarray:
@@ -27,15 +27,14 @@ def scale_samples(samples: np.ndarray, design_space: np.ndarray) -> np.ndarray:
 def get_samples(num_dim: int) -> np.ndarray:
     # define function information
     noise_std = 50.0
-    # phi = 7000
 
     # define samples information
-    num_hf = 250*num_dim
-    num_lf = 1500*num_dim
+    num_hf = 50*num_dim
+    num_lf = 500*num_dim
     num_test = 2000*num_dim
 
     # initialize the problem
-    problem = Rosenbrock(num_dim=num_dim, noise_std=noise_std)
+    problem = Meng20D(num_dim=num_dim, noise_std=noise_std)
 
     # define the design space which [-1,1]
     design_space = np.tile(np.array([-3, 3]), (num_dim, 1))
@@ -54,7 +53,7 @@ def get_samples(num_dim: int) -> np.ndarray:
     test_samples = torch.tensor(test_samples, dtype=torch.float32)
     # get the function values
     hf_responses = problem.hf(hf_samples)
-    lf_responses = problem.lf(lf_samples)
+    lf_responses = problem.lf(lf_samples, noise_lf=0.0)
 
     # noiseless test responses
     test_responses_noiseless = problem.hf(test_samples, noise_hf=0.0)
