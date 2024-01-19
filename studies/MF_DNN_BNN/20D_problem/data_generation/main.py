@@ -26,11 +26,11 @@ def scale_samples(samples: np.ndarray, design_space: np.ndarray) -> np.ndarray:
 
 def get_samples(num_dim: int) -> np.ndarray:
     # define function information
-    noise_std = 50.0
+    noise_std = 10.0
 
     # define samples information
-    num_hf = 50*num_dim
-    num_lf = 500*num_dim
+    num_hf = 100*num_dim
+    num_lf = 2000*num_dim
     num_test = 2000*num_dim
 
     # initialize the problem

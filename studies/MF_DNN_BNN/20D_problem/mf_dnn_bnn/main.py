@@ -51,9 +51,9 @@ def main():
     hf_configure = {"in_features": 20,
                     "hidden_features": [512, 512],
                     "out_features": 1,
-                    "activation": "Tanh",
+                    "activation": "ReLU",
                     "lr": 0.001,
-                    "sigma": 50.0}
+                    "sigma": 10.0}
 
     # create the MFDNNBNN object
     mfdnnbnn = MFDNNBNN(design_space=design_space,
@@ -113,7 +113,7 @@ def main():
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("results.csv", index=False)
+    df.to_csv("md_dnn_bnn_20d_results.csv", index=False)
 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ def main():
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
-                    "lr": 0.0001,
+                    "lr": 0.001,
                     "weight_decay": 0.000001,
                     "loss": "mse"}
 

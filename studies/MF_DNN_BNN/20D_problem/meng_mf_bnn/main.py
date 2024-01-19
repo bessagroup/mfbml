@@ -39,19 +39,19 @@ def main():
     lf_configure = {"in_features": 20,
                     "hidden_features": [128, 128, 128, 128],
                     "out_features": 1,
-                    "activation": "Tanh",
+                    "activation": "ReLU",
                     "optimizer": "Adam",
-                    "lr": 0.0001,
+                    "lr": 0.001,
                     "weight_decay": 0.00001,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
-    hf_configure = {"in_features": 20,
+    hf_configure = {"in_features": 21,
                     "hidden_features": [512, 512],
                     "out_features": 1,
-                    "activation": "Tanh",
+                    "activation": "ReLU",
                     "lr": 0.001,
-                    "sigma": 50.0}
+                    "sigma": 10.0}
 
     # create the MFDNNBNN object
     mfdnnbnn = MFDNNBNN(design_space=design_space,
@@ -62,7 +62,7 @@ def main():
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 20000,
+                       "num_epochs": 50000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
@@ -111,7 +111,7 @@ def main():
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("results.csv", index=False)
+    df.to_csv("meng_mf_bnn_results.csv", index=False)
 
 
 if __name__ == "__main__":
