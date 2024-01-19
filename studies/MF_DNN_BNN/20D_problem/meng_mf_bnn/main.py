@@ -8,7 +8,7 @@ from sklearn.metrics import r2_score
 from mfbml.get_methods.accuracy_metrics import (log_likelihood_value,
                                                 normalized_mae,
                                                 normalized_rmse)
-from mfbml.methods.mf_dnn_bnn import MFDNNBNN
+from mfbml.methods.sequential_mf_bnn import SequentialMFBNN
 
 
 def main():
@@ -53,12 +53,10 @@ def main():
                     "lr": 0.001,
                     "sigma": 10.0}
 
-    # create the MFDNNBNN object
-    mfdnnbnn = MFDNNBNN(design_space=design_space,
-                        lf_configure=lf_configure,
-                        hf_configure=hf_configure,
-                        beta_optimize=False,
-                        beta_bounds=[-5, 5])
+    # create the sequential mf bnn object
+    mfbnn = SequentialMFBNN(design_space=design_space,
+                            lf_configure=lf_configure,
+                            hf_configure=hf_configure)
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
@@ -71,19 +69,19 @@ def main():
                        "burn_in_epochs": 10000}
 
     # train the MFDNNBNN object
-    mfdnnbnn.train(samples=samples,
-                   responses=responses,
-                   lf_train_config=lf_train_config,
-                   hf_train_config=hf_train_config
-                   )
+    mfbnn.train(samples=samples,
+                responses=responses,
+                lf_train_config=lf_train_config,
+                hf_train_config=hf_train_config
+                )
 
     # predict the MFDNNBNN object
-    y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(x=test_samples)
+    y, epistemic, total_unc, aleatoric = mfbnn.predict(x=test_samples)
     print(f"aleatoric: {aleatoric}")
     print(f"epistemic: {epistemic}")
     print(f"total_unc: {total_unc}")
     # lf prediction
-    lf_y = mfdnnbnn.predict_lf(x=test_samples, output_format="numpy")
+    lf_y = mfbnn.predict_lf(x=test_samples, output_format="numpy")
 
     # calculate the nmae, nrmse, r2 score and log likelihood
     nmae = normalized_mae(test_responses_noiseless.numpy(), y)
