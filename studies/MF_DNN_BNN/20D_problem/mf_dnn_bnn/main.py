@@ -15,8 +15,9 @@ from mfbml.methods.mf_dnn_bnn import MFDNNBNN
 
 def main():
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data.pkl", "rb"))
-    print(data["hf_samples"].shape)
+    data = pickle.load(open("../data_generation/data_20D_example.pkl", "rb"))
+    print(f"hf sample shape: {data['hf_samples'].shape}")
+    print(f"lf sample shape: {data['lf_samples'].shape}")
     # get the data
     hf_samples = data["hf_samples"]
     lf_samples = data["lf_samples"]
@@ -39,12 +40,12 @@ def main():
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 20,
-                    "hidden_features": [128, 128, 128, 128],
+                    "hidden_features": [512, 512, 512],
                     "out_features": 1,
                     "activation": "ReLU",
-                    "optimizer": "Adam",
-                    "lr": 0.001,
-                    "weight_decay": 0.000001,
+                    "optimizer": "Adammax",
+                    "lr": 0.00001,
+                    "weight_decay": 0.00002,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
@@ -63,14 +64,14 @@ def main():
                         beta_bounds=[-5, 5])
 
     # lf train config
-    lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 50000,
+    lf_train_config = {"batch_size": 3000,
+                       "num_epochs": 10000,
                        "print_iter": 100,
                        "data_split": True}
-    hf_train_config = {"num_epochs": 80000,
+    hf_train_config = {"num_epochs": 50000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 30000}
+                       "burn_in_epochs": 10000}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -113,7 +114,7 @@ def main():
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("md_dnn_bnn_20d_results.csv", index=False)
+    df.to_csv("mf_dnn_bnn_20d_results.csv", index=False)
 
 
 if __name__ == "__main__":

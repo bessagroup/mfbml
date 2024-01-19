@@ -59,7 +59,7 @@ def normalize_outputs(y: torch.Tensor) -> torch.Tensor:
 def main() -> None:
 
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data.pkl", "rb"))
+    data = pickle.load(open("../data_generation/data_20D_example.pkl", "rb"))
     print(f"HF samples: {data['hf_samples'].shape}")
     print(f"LF samples: {data['lf_samples'].shape}")
 

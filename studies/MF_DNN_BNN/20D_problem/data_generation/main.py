@@ -30,7 +30,7 @@ def get_samples(num_dim: int) -> np.ndarray:
 
     # define samples information
     num_hf = 100*num_dim
-    num_lf = 2000*num_dim
+    num_lf = 1500*num_dim
     num_test = 2000*num_dim
 
     # initialize the problem
@@ -78,7 +78,7 @@ def get_samples(num_dim: int) -> np.ndarray:
 
     }
     # save the data to pickle file
-    with open("data.pkl", "wb") as f:
+    with open("data_20D_example.pkl", "wb") as f:
         pickle.dump(data, f)
 
 
