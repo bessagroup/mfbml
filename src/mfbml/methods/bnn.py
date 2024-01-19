@@ -412,7 +412,7 @@ class BNNWrapper:
 
         noise_p = self.sigma
         print("==================================================")
-        print("epoch: %5d/%5d" % (iter + 1, self.num_epochs,))
+        print("epoch: %5d/%5d" % (iter, self.num_epochs,))
         print("nll_loss: %2.3f, prior_loss: %2.3f, total: %2.3f" %
               (self.nll_loss_train[iter],
                self.prior_loss_train[iter],
@@ -451,22 +451,3 @@ class BNNWrapper:
                      torch.log(torch.tensor(2*torch.pi))).sum()
 
         return neg_lld
-
-
-# # write code to test the BNNWrapper class
-# # create the training data
-# x_train = torch.linspace(-1, 1, 100).reshape(-1, 1)
-# y_train = torch.sin(x_train * 2 * torch.pi)
-
-# # create the model
-# model = BNNWrapper(in_features=1,
-#                    hidden_features=[20, 20, 20],
-#                    out_features=1,
-#                    activation="ReLU",
-#                    lr=0.001,
-#                    sigma=0.1)
-
-
-# # train the model
-# model.train(x_train, y_train, num_epochs=10000,
-#             sample_freq=100, burn_in_epochs=1000)

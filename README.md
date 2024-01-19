@@ -1,4 +1,5 @@
 # MF-BML
+
 A general Multi-Fidelity Bayesian Machine Learning framework: from data scarce to large data set
 
 ---
@@ -11,7 +12,7 @@ This repo provides provide a general Multi-Fidelity Bayesian Machine Learning fr
 
 ### **State of need**
 
-Detailed methodology description is given in the paper. 
+Detailed methodology description is given in the paper.
 
 ---
 
@@ -49,7 +50,6 @@ pip install --verbose --no-build-isolation --editable .
 pip install -r requirements.txt
 ```
 
-
 ---
 
 ### **Community Support**
@@ -60,8 +60,8 @@ Now everything is under developing, if you have any question, please contact to 
 
 ### **License**
 
-Copyright 2023, Jiaxiang Yi
+BSD 3-Clause License, Jiaxiang Yi
 
 All rights reserved.
 
-mfbml is a free and open-source repo published under a MIT License.
+mfbml is a free and open-source repo published under BSD 3-Clause License.

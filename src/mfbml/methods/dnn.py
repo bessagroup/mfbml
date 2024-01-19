@@ -3,7 +3,9 @@
 from typing import Any
 
 import torch
+from sklearn.model_selection import train_test_split
 from torch import nn as nn
+from torch.utils.data import DataLoader
 
 
 # class for low-fidelity DNN
@@ -162,7 +164,8 @@ class LFDNN(MLP):
               y: torch.Tensor,
               batch_size: int | bool = None,  # type: ignore
               num_epoch: int = 1000,
-              print_iter: int = 100,) -> None:
+              print_iter: int = 100,
+              data_split: bool = False) -> None:
         """train the model
 
         Parameters
@@ -175,23 +178,51 @@ class LFDNN(MLP):
             batch size, by default None
         num_epoch : int, optional
             number of epochs, by default 1000
+        print_iter : int, optional
+            print iteration, by default 100
+        data_split : bool, optional
+            whether to split the data into train and test, by default False
         """
         # give me the training process code here
 
         self.num_epoch = num_epoch
         self.batch_size = batch_size
+        self.data_split = data_split
+        if self.data_split:
+            X_train, X_test, y_train, y_test = train_test_split(
+                x, y, test_size=0.2, random_state=42)
+        else:
+            X_train = x
+            y_train = y
+            print("No data split: use all data for training")
+
+        # if batch size is not given, use all data for training
+        if self.batch_size is None and self.data_split is True:
+            self.batch_size = len(X_train)
+        else:
+            self.batch_size = len(x)
+
+        # create the data loader
+        loader = DataLoader(list(zip(X_train, y_train)),
+                            batch_size=self.batch_size,
+                            shuffle=True)
 
         for epoch in range(self.num_epoch):
-            # train the model
-            self.optimizer.zero_grad()
-            y_pred = self.forward(x)
-            loss = self.loss(y_pred, y)
-            loss.backward()
-            self.optimizer.step()
+            # train the model with mini-batch
+            for X_batch, y_batch in loader:
+                self.optimizer.zero_grad()
+                y_pred = self.forward(X_batch)
+                loss = self.loss(y_pred, y_batch)
+                loss.backward()
+                self.optimizer.step()
 
             # print the loss to the screen
-            if (epoch+1) % print_iter == 0:
-                print("epoch: ", epoch, "loss: ", loss.item())
+            if (epoch+1) % print_iter == 0 and self.data_split is True:
+                print("epoch: ", epoch + 1, "train loss: ", loss.item(),
+                      "test loss: ",
+                      self.loss(self.forward(X_test), y_test).item())
+            elif (epoch+1) % print_iter == 0 and self.data_split is False:
+                print("epoch: ", epoch + 1, "train loss: ", loss.item())
 
     def _get_optimizer(self) -> Any:
         """get optimizer according names
@@ -216,6 +247,10 @@ class LFDNN(MLP):
             return torch.optim.SGD(self.net.parameters(),
                                    lr=self.lr,
                                    weight_decay=self.weight_decay)
+        elif self.optimizer_name == "Adammax":
+            return torch.optim.Adamax(self.net.parameters(),
+                                      lr=self.lr,
+                                      weight_decay=self.weight_decay)
         else:
             raise ValueError(
                 "the optimizer is not implemented in this framework!"
@@ -265,36 +300,3 @@ class LFDNN(MLP):
         """
 
         self.loss = loss
-
-
-# write code to test LFDNN class
-if __name__ == "__main__":
-
-    # test on the MengCase1 function
-
-    # create the model
-    model = LFDNN(in_features=1,
-                  hidden_features=[20, 20, 20],
-                  out_features=1,
-                  activation="ReLU",
-                  optimizer="Adam",
-                  lr=0.001,
-                  weight_decay=0.01,
-                  loss="mse")
-
-    # train the model
-    model.train(x_train, y_train, batch_size=100, num_epoch=10000)
-
-    # create the test data
-    x_test = torch.linspace(-1, 1, 100).reshape(-1, 1)
-    y_test = torch.sin(x_test * 2 * torch.pi)
-
-    # test the model
-    y_pred = model.forward(x_test)
-    import matplotlib.pyplot as plt
-
-    # plot the results
-    plt.plot(x_test, y_test, label="ground truth")
-    plt.plot(x_test, y_pred.detach().numpy(), label="prediction")
-    plt.legend()
-    plt.show()  # type: ignore
