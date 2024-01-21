@@ -112,9 +112,9 @@ def main() -> None:
     # train the bnn model
     bnn_model.train(x=hf_samples_scaled,
                     y=hf_responses_scaled,
-                    num_epochs=5000,
+                    num_epochs=50000,
                     sample_freq=100,
-                    burn_in_epochs=1000,
+                    burn_in_epochs=10000,
                     print_info=True)
 
     # predict the MFDNNBNN object

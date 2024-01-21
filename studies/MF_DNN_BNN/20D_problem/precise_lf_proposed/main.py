@@ -79,24 +79,29 @@ def main() -> None:
     # scale the data
     hf_samples_scaled = normalize_inputs(hf_samples, design_space)
     test_samples_scaled = normalize_inputs(test_samples, design_space)
-    hf_responses_scaled = normalize_outputs(hf_responses)
     # get the lf value at the hf samples
     lf_responses = problem.lf(x=hf_samples, noise_lf=0.0)
-    # scale the lf responses
-    lf_responses_scaled = (
-        lf_responses - torch.mean(hf_responses)) / torch.std(hf_responses)
 
-    # difference response
-    diff_responses = hf_responses_scaled - lf_responses_scaled
+    # get the difference between hf and lf responses
+    diff_responses = hf_responses - 1.25*lf_responses
+    # scale the difference output
+    diff_responses_scaled = normalize_outputs(diff_responses)
 
     # get the lf values at the test samples
     lf_responses_test = problem.lf(x=test_samples, noise_lf=0.0)
-    # scale the lf responses
-    lf_responses_test_scaled = (
-        lf_responses_test - torch.mean(hf_responses)) / torch.std(hf_responses)
+    # # scale the lf responses
+    # lf_responses_test_scaled = (
+    #     lf_responses_test - torch.mean(hf_responses)) / torch.std(hf_responses)
 
     # scale the sigma
-    sigma_scaled = float(10.0 / torch.std(hf_responses))
+    sigma_scaled = float(10.0 / torch.std(diff_responses))
+    # print the sigma
+    print(f"sigma: {sigma_scaled}")
+    # print the mean and std of the diff responses
+    print(f"mean of diff responses: {torch.mean(diff_responses)}")
+    # print the std of the diff responses
+    print(f"std of diff responses: {torch.std(diff_responses)}")
+
     # define the bnn model
     bnn_model = BNNWrapper(in_features=20,
                            hidden_features=[512, 512],
@@ -107,23 +112,25 @@ def main() -> None:
 
     # train the bnn model
     bnn_model.train(x=hf_samples_scaled,
-                    y=diff_responses,
-                    num_epochs=10000,
+                    y=diff_responses_scaled,
+                    num_epochs=50000,
                     sample_freq=100,
-                    burn_in_epochs=2000,
+                    burn_in_epochs=10000,
                     print_info=True)
 
     # predict the MFDNNBNN object
     y, epistemic, total_unc, aleatoric = bnn_model.predict(
         x=test_samples_scaled)
 
-    y = y + lf_responses_test_scaled.numpy()
-    # scale the data back
-    y = y * torch.std(hf_responses).numpy() + torch.mean(hf_responses).numpy()
+    y = y*torch.std(diff_responses).numpy() + \
+        torch.mean(diff_responses).numpy()
 
-    total_unc = total_unc * torch.std(hf_responses).numpy()
-    aleatoric = aleatoric * torch.std(hf_responses).numpy()
-    epistemic = epistemic * torch.std(hf_responses).numpy()
+    # scale the data back
+    y = y + 1.28*lf_responses_test.numpy()
+
+    total_unc = total_unc * torch.std(diff_responses).numpy()
+    aleatoric = aleatoric * torch.std(diff_responses).numpy()
+    epistemic = epistemic * torch.std(diff_responses).numpy()
 
     # calculate the nmae, nrmse, r2 score and log likelihood
     nmae = normalized_mae(test_responses_noiseless.numpy(), y)
