@@ -40,12 +40,12 @@ def main():
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 20,
-                    "hidden_features": [512, 512, 512],
+                    "hidden_features": [200, 200],
                     "out_features": 1,
-                    "activation": "ReLU",
-                    "optimizer": "Adammax",
-                    "lr": 0.00001,
-                    "weight_decay": 0.00002,
+                    "activation": "Tanh",
+                    "optimizer": "Adam",
+                    "lr": 0.0001,
+                    "weight_decay": 0.00003,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
@@ -62,10 +62,11 @@ def main():
                         hf_configure=hf_configure,
                         beta_optimize=False,
                         beta_bounds=[-5, 5])
-
+    # change the value of beta
+    # mfdnnbnn.beta = np.array([0.8])
     # lf train config
-    lf_train_config = {"batch_size": 3000,
-                       "num_epochs": 10000,
+    lf_train_config = {"batch_size": 1000,
+                       "num_epochs": 80000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,

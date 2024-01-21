@@ -13,7 +13,7 @@ from mfbml.methods.sequential_mf_bnn import SequentialMFBNN
 
 def main():
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data.pkl", "rb"))
+    data = pickle.load(open("../data_generation/data_20D_example.pkl", "rb"))
     print(data["hf_samples"].shape)
     # get the data
     hf_samples = data["hf_samples"]
@@ -37,12 +37,12 @@ def main():
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 20,
-                    "hidden_features": [128, 128, 128, 128],
+                    "hidden_features": [200, 200],
                     "out_features": 1,
-                    "activation": "ReLU",
+                    "activation": "Tanh",
                     "optimizer": "Adam",
-                    "lr": 0.001,
-                    "weight_decay": 0.00001,
+                    "lr": 0.0001,
+                    "weight_decay": 0.00003,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
@@ -60,7 +60,7 @@ def main():
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 50000,
+                       "num_epochs": 80000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
@@ -109,7 +109,7 @@ def main():
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("meng_mf_bnn_results.csv", index=False)
+    df.to_csv("meng_mf_bnn_20D_results.csv", index=False)
 
 
 if __name__ == "__main__":
