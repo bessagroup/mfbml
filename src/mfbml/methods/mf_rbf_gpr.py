@@ -70,8 +70,7 @@ class MFRBFGPR:
         # rbf surrogate model would normalize the inputs directly
         self.lf_model.train(samples["lf"], responses["lf"])
         # prediction of low-fidelity at high-fidelity locations
-        f = self.predict_lf(self.sample_xh)
-        self.f = (f-self.yh_mean)/self.yh_std
+        self.f = self._basis_function(self.sample_xh)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
@@ -87,7 +86,7 @@ class MFRBFGPR:
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the predicted mean
-        f = (self.predict_lf(x_predict)-self.yh_mean)/self.yh_std
+        f = self._basis_function(x_predict)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
         fmean = (fmean * self.yh_std + self.yh_mean).reshape(-1, 1)
@@ -269,6 +268,27 @@ class MFRBFGPR:
         self.yh_std = np.std(outputs)
 
         return (outputs - self.yh_mean) / self.yh_std
+
+    def _basis_function(self, x: np.ndarray) -> np.ndarray:
+        """Calculate the basis function
+
+        Parameters
+        ----------
+        x : np.ndarray
+            sample points
+
+        Returns
+        -------
+        np.ndarray
+            basis function
+        """
+        # get the prediction of low-fidelity at high-fidelity locations
+        f = self.predict_lf(x)
+        f = (f-self.yh_mean)/self.yh_std
+        # assemble the basis function by having the first column as 1
+        f = np.hstack((np.ones((f.shape[0], 1)), f))
+
+        return f
 
     @property
     def _get_lf_model(self) -> Any:

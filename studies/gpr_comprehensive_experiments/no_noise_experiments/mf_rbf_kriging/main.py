@@ -257,13 +257,13 @@ def execute_experimentdata() -> None:
     data = f3dasm.ExperimentData.from_file(
         filename='exp_{}'.format('mf_rbf'))
     # run the function
-    data.evaluate(MFBMLExperiments(), mode='cluster')
+    data.evaluate(MFBMLExperiments(), mode='sequential')
 
 
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
 
-    # f3dasm.HPC_JOBID = 0
+    f3dasm.HPC_JOBID = 0
     if f3dasm.HPC_JOBID == 0:
         create_experiment_data()
         execute_experimentdata()

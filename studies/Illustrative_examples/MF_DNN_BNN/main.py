@@ -43,7 +43,7 @@ mfdnnbnn = MFDNNBNN(design_space=torch.tile(torch.Tensor([0, 1]), (num_dim, 1)),
                     beta_optimize=False,
                     beta_bounds=[-5, 5])
 
-
+mfdnnbnn.beta = np.array([2.0])
 samples = {"lf": lf_samples,
            "hf": hf_samples}
 

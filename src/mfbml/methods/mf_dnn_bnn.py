@@ -139,9 +139,6 @@ class MFDNNBNN:
         self.lf_responses_scaled = self.normalize_lf_output(self.lf_responses)
         # get the high-fidelity responses
         self.hf_responses = responses["hf"]
-        self.hf_responses_scaled = self.normalize_hf_output(self.hf_responses)
-        # scale the noise for HF model
-        self.hf_model.sigma = self.hf_model.sigma / self.yh_std.numpy()
         # train the low-fidelity model
         self.train_lf_model(x=self.lf_samples_scaled,
                             y=self.lf_responses_scaled,
@@ -155,13 +152,16 @@ class MFDNNBNN:
 
         # get the low-fidelity model prediction of the high-fidelity samples
         lf_hf_samples = self.predict_lf(self.hf_samples, output_format="torch")
-        # scale the LF to the HF
-        lf_hf_samples = (lf_hf_samples - self.yh_mean) / self.yh_std
-        # get the discrepancy between the LFand LF samples
-        dis_hf_lf_samples = self.hf_responses_scaled - \
+        # get the difference between the high-fidelity and low-fidelity samples
+        dis_hf_lf_samples = self.hf_responses - \
             torch.from_numpy(self.beta)*lf_hf_samples
+        # get the discrepancy between the LFand LF samples
+        dis_hf_lf_samples = self.normalize_diff_output(dis_hf_lf_samples)
         # set the samplers to be torch tensors
         dis_hf_lf_samples = torch.Tensor(dis_hf_lf_samples)
+        # scale the noise for HF model
+        self.hf_model.sigma = self.hf_model.sigma / self.diff_std.numpy()
+
         # train the high-fidelity model
         self.train_hf_model(x=self.hf_samples_scaled,
                             y=dis_hf_lf_samples,
@@ -184,22 +184,22 @@ class MFDNNBNN:
             _description_
         """
         # get the low-fidelity model prediction
-        lf_y = self.predict_lf(x, output_format="torch")
+        lf_y = self.predict_lf(x, output_format="numpy")
         # scale the lf_y to HF scale
-        lf_y = (lf_y - self.yh_mean) / self.yh_std
         # scale the input data
         x_scale = self.normalize_inputs(x)
         # get the high-fidelity model prediction(trained in the original scale)
         hy_pred, epistemic, total_unc, aleatoric = self.hf_model.predict(
             x_scale)
+        # scale the discrepancy to the original scale
+        hy_pred = hy_pred * self.diff_std.numpy() + self.diff_mean.numpy()
         # get the final prediction
-        y = self.beta*lf_y.detach().numpy() + hy_pred
+        y = self.beta*lf_y + hy_pred
 
-        # scale the output data
-        y = y * self.yh_std.numpy() + self.yh_mean.numpy()
-        epistemic = epistemic * self.yh_std.numpy()
-        total_unc = total_unc * self.yh_std.numpy()
-        aleatoric = aleatoric * self.yh_std.numpy()
+        # uncertainties
+        epistemic = epistemic * self.diff_std.numpy()
+        total_unc = total_unc * self.diff_std.numpy()
+        aleatoric = aleatoric * self.diff_std.numpy()
 
         return y, epistemic, total_unc, aleatoric
 
@@ -388,7 +388,7 @@ class MFDNNBNN:
 
         return y
 
-    def normalize_hf_output(self, y: torch.Tensor) -> torch.Tensor:
+    def normalize_diff_output(self, y: torch.Tensor) -> torch.Tensor:
         """normalize the output data of the high-fidelity model
 
         Parameters
@@ -401,8 +401,8 @@ class MFDNNBNN:
         torch.Tensor
             normalized output data of the high-fidelity model
         """
-        self.yh_mean = torch.mean(y)
-        self.yh_std = torch.std(y)
-        y = (y - self.yh_mean) / self.yh_std
+        self.diff_mean = torch.mean(y).detach()
+        self.diff_std = torch.std(y).detach()
+        y = (y - self.diff_mean) / self.diff_std
 
         return y

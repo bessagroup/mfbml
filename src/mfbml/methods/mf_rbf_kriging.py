@@ -65,8 +65,7 @@ class MFRBFKriging:
         # rbf surrogate model would normalize the inputs directly
         self.lf_model.train(samples["lf"], responses["lf"])
         # prediction of low-fidelity at high-fidelity locations
-        f = self.predict_lf(self.sample_xh)
-        self.f = (f-self.yh_mean)/self.yh_std
+        self.f = self._basis_function(self.sample_xh)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
@@ -82,7 +81,7 @@ class MFRBFKriging:
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the normalized predicted mean
-        f = (self.predict_lf(x_predict) - self.yh_mean) / self.yh_std
+        f = self._basis_function(x_predict)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
         # scaled the mean back to original scale
@@ -92,17 +91,12 @@ class MFRBFKriging:
             return fmean.reshape(-1, 1)
         else:
             delta = solve(self.L.T, solve(self.L, knew))
-            mse = self.sigma2 * (
-                1
-                - np.diag(knew.T.dot(delta))
-                + np.diag(
-                    np.dot(
-                        (knew.T.dot(self.KF) - f),
-                        (knew.T.dot(self.KF) - f).T,
-                    )
-                )
-                / self.f.T.dot(self.KF)
-            )
+            R = f.T - np.dot(self.f.T, delta)
+            mse = self.sigma2 * \
+                (1 - np.diag(np.dot(knew.T, delta)) +
+                 np.diag(R.T.dot(solve(self.ld.T, solve(self.ld, R))))
+                 )
+
             std = np.sqrt(np.maximum(mse, 0)).reshape(-1, 1)
             std = std * self.yh_std
 
@@ -200,6 +194,27 @@ class MFRBFKriging:
     def predict_lf(self, test_xl: np.ndarray) -> np.ndarray:
 
         return self.lf_model.predict(test_xl)
+
+    def _basis_function(self, x: np.ndarray) -> np.ndarray:
+        """Calculate the basis function
+
+        Parameters
+        ----------
+        x : np.ndarray
+            sample points
+
+        Returns
+        -------
+        np.ndarray
+            basis function
+        """
+        # get the prediction of low-fidelity at high-fidelity locations
+        f = self.predict_lf(x)
+        f = (f-self.yh_mean)/self.yh_std
+        # assemble the basis function by having the first column as 1
+        f = np.hstack((np.ones((f.shape[0], 1)), f))
+
+        return f
 
     def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
         """Normalize the input into [0, 1] according to the bounds
