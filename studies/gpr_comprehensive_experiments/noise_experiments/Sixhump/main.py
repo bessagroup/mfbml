@@ -290,7 +290,7 @@ def execute_experimentdata() -> None:
     data = f3dasm.ExperimentData.from_file(
         filename='exp_{}'.format('mf_rbf_gpr'))
     # run the function
-    data.evaluate(MFBMLExperiments(), mode='sequential')
+    data.evaluate(MFBMLExperiments(), mode='cluster')
 
 
 def main() -> None:
