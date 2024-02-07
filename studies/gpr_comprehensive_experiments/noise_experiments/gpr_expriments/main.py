@@ -18,11 +18,11 @@ from f3dasm.datageneration import DataGenerator
 from mfpml.design_of_experiment.multifidelity_samplers import MFLatinHyperCube
 from sklearn.metrics import r2_score
 
-from mfbml.get_methods.accuracy_metrics import (log_likelihood_value,
-                                                normalized_mae,
-                                                normalized_rmse)
-from mfbml.get_methods.utils import get_methods_for_noise_data
-from mfbml.problem_sets.noiseless_problems import register_problem
+from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
+                                            normalized_mae,
+                                            normalized_rmse)
+from mfbml.utils.get_methods import get_methods_for_noise_data
+from mfbml.problems.low_dimension_problems import register_problem
 
 # ===========================================================================
 
@@ -294,7 +294,7 @@ def main() -> None:
             execute_experimentdata()
         except:
             sleep(3*f3dasm.HPC_JOBID)
-            execute_experimentdata()         
+            execute_experimentdata()
 
 
 if __name__ == '__main__':

@@ -1,2 +1,4 @@
 from .methods import MFRBFGPR, MFRBFKriging
-from .problem_sets.noiseless_problems import register_problem
+from .metrics.accuracy_metrics import (mean_log_likelihood_value,
+                                       normalized_mae, normalized_rmse)
+from .problems.low_dimension_problems import register_problem

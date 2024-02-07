@@ -19,9 +19,9 @@ from f3dasm.datageneration import DataGenerator
 from mfpml.design_of_experiment.multifidelity_samplers import MFLatinHyperCube
 from sklearn.metrics import r2_score
 
-from mfbml.get_methods.accuracy_metrics import normalized_mae, normalized_rmse
-from mfbml.get_methods.utils import get_method
-from mfbml.problem_sets.noiseless_problems import register_problem
+from mfbml.metrics.accuracy_metrics import normalized_mae, normalized_rmse
+from mfbml.utils.get_methods import get_method
+from mfbml.problems.low_dimension_problems import register_problem
 
 # ===========================================================================
 
@@ -262,7 +262,6 @@ def execute_experimentdata() -> None:
     # run the function
     data.evaluate(MFBMLExperiments(), mode='cluster')
 
-  
 
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
@@ -272,7 +271,7 @@ def main() -> None:
         create_experiment_data()
         execute_experimentdata()
     elif f3dasm.HPC_JOBID > 0:
-        try: 
+        try:
             sleep(3*f3dasm.HPC_JOBID)
             execute_experimentdata()
         except:
