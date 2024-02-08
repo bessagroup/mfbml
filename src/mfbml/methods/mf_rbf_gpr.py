@@ -20,8 +20,10 @@ class MFRBFGPR:
         optimizer_restart: int = 0,
         kernel: Any = None,
         noise_prior: float = None,
+        seed: int = 42,
     ) -> None:
 
+        np.random.seed(seed)
         self.bounds = design_space
         self.optimizer = optimizer
         self.optimizer_restart = optimizer_restart
@@ -40,7 +42,8 @@ class MFRBFGPR:
         self.lf_model = RBFKernelRegression(design_space=self.bounds,
                                             params_optimize=True,
                                             noise_data=True,
-                                            optimizer_restart=5)
+                                            optimizer_restart=5,
+                                            seed=seed)
 
     def train(self, samples: dict, responses: dict) -> None:
         """Train the hierarchical gaussian process model

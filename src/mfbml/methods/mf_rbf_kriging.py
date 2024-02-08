@@ -27,8 +27,10 @@ class MFRBFKriging:
         optimizer: Any = None,
         optimizer_restart: int = 0,
         kernel: Any = None,
+        seed: int = 42,
     ) -> None:
 
+        np.random.seed(seed)
         self.bounds = design_space
         self.optimizer = optimizer
         self.optimizer_restart = optimizer_restart
@@ -44,7 +46,8 @@ class MFRBFKriging:
         self.lf_model = RBFKernelRegression(
             design_space=self.bounds,
             params_optimize=True,
-            optimizer_restart=1)
+            optimizer_restart=1,
+            seed=seed,)
 
     def train(self, samples: dict, responses: dict) -> None:
         """Train the hierarchical Kriging model

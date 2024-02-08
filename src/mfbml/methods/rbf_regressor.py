@@ -20,7 +20,11 @@ class RBFKernelRegression:
                  optimizer_restart: int = 0,
                  noise_data: bool = False,
                  noise_std: float = 0.1,
+                 seed: int = 42
                  ) -> None:
+
+        # set random seed
+        np.random.seed(seed)
         # determine whether to optimize the parameters or not
         self.params_optimize = params_optimize
         # number of restarts for the optimizer

@@ -266,90 +266,90 @@ class MengCase1:
         return obj.reshape(-1, 1)
 
 
-class Forrester1b:
-    """Forrester function 1b
-    """
+# class Forrester1b:
+#     """Forrester function 1b
+#     """
 
-    def __init__(self, noise_std: float) -> None:
+#     def __init__(self, noise_std: float) -> None:
 
-        self.noise_std = noise_std
+#         self.noise_std = noise_std
 
-    def __call__(self, samples: dict) -> dict:
-        """evaluate the problem
+#     def __call__(self, samples: dict) -> dict:
+#         """evaluate the problem
 
-        Parameters
-        ----------
-        samples : dict
-            samples
+#         Parameters
+#         ----------
+#         samples : dict
+#             samples
 
-        Returns
-        -------
-        dict
-            responses
-        """
+#         Returns
+#         -------
+#         dict
+#             responses
+#         """
 
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
+#         # get samples
+#         hf_samples = samples["hf"]
+#         lf_samples = samples["lf"]
 
-        # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
+#         # evaluate the problem
+#         responses = {"hf": self.hf(hf_samples),
+#                      "lf": self.lf(lf_samples)}
 
-        return responses
+#         return responses
 
-    def hf(self, x: torch.Tensor,
-           noise_hf: float = None  # type: ignore
-           ) -> torch.Tensor:
-        """high fidelity function
+#     def hf(self, x: torch.Tensor,
+#            noise_hf: float = None  # type: ignore
+#            ) -> torch.Tensor:
+#         """high fidelity function
 
-        Parameters
-        ----------
-        x : torch.Tensor
-            high fidelity input x
-        noise_hf : float, optional
-            noise std, by default None 
+#         Parameters
+#         ----------
+#         x : torch.Tensor
+#             high fidelity input x
+#         noise_hf : float, optional
+#             noise std, by default None
 
-        Returns
-        -------
-        torch.Tensor
-            outputs
-        """
+#         Returns
+#         -------
+#         torch.Tensor
+#             outputs
+#         """
 
-        if noise_hf is None:
-            noise_hf = self.noise_std
+#         if noise_hf is None:
+#             noise_hf = self.noise_std
 
-        obj = (6*x - 2)**2 * torch.sin(12*x - 4) + \
-            noise_hf * torch.randn(x.shape)
+#         obj = (6*x - 2)**2 * torch.sin(12*x - 4) + \
+#             noise_hf * torch.randn(x.shape)
 
-        return obj.reshape(-1, 1)
+#         return obj.reshape(-1, 1)
 
-    def lf(self, x: torch.Tensor,
-           noise_lf: float = None  # type: ignore
-           ) -> torch.Tensor:
-        """low fidelity function
+#     def lf(self, x: torch.Tensor,
+#            noise_lf: float = None  # type: ignore
+#            ) -> torch.Tensor:
+#         """low fidelity function
 
-        Parameters
-        ----------
-        x : torch.Tensor
-            input tensor
-        noise_lf : float, optional
-            noise standard deviation, by default None
+#         Parameters
+#         ----------
+#         x : torch.Tensor
+#             input tensor
+#         noise_lf : float, optional
+#             noise standard deviation, by default None
 
-        Returns
-        -------
-        torch.Tensor
-            output tensor
-        """
+#         Returns
+#         -------
+#         torch.Tensor
+#             output tensor
+#         """
 
-        if noise_lf is None:
-            noise_lf = self.noise_std
+#         if noise_lf is None:
+#             noise_lf = self.noise_std
 
-        obj = 0.5 * self.hf(x, noise_hf=0.0) + \
-            10 * (x - 0.5) - 5 + \
-            noise_lf * torch.randn(x.shape)
+#         obj = 0.5 * self.hf(x, noise_hf=0.0) + \
+#             10 * (x - 0.5) - 5 + \
+#             noise_lf * torch.randn(x.shape)
 
-        return obj.reshape(-1, 1)
+#         return obj.reshape(-1, 1)
 
 
 class Rosenbrock:
