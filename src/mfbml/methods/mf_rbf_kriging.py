@@ -1,15 +1,23 @@
-# standard libraries
-import time
+#                                                                       Modules
+# =============================================================================
+# standard library
 from typing import Any, Tuple
 
-# third party
+# third party modules
 import numpy as np
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
 
-# local
+# local functions
 from .rbf_kernel import RBF
 from .rbf_regressor import RBFKernelRegression
+
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'Jiaxiang Yi'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Development'
+# =============================================================================
 
 
 class MFRBFKriging:
@@ -72,16 +80,16 @@ class MFRBFKriging:
         self._update_parameters()
 
     def predict(self,
-                x_predict: np.ndarray,
+                X: np.ndarray,
                 return_std: bool = False
                 ) -> Tuple[np.ndarray, np.ndarray]:
         # normalize the input
-        sample_new = self.normalize_input(x_predict)
+        sample_new = self.normalize_input(X)
         sample_new = np.atleast_2d(sample_new)
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the normalized predicted mean
-        f = self._basis_function(x_predict)
+        f = self._basis_function(X)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
         # scaled the mean back to original scale
@@ -191,9 +199,9 @@ class MFRBFKriging:
         self.logp = (-0.5 * self._num_xh * np.log(self.sigma2) -
                      np.sum(np.log(np.diag(self.L)))).item()
 
-    def predict_lf(self, test_xl: np.ndarray) -> np.ndarray:
+    def predict_lf(self, X: np.ndarray) -> np.ndarray:
 
-        return self.lf_model.predict(test_xl)
+        return self.lf_model.predict(X)
 
     def _basis_function(self, x: np.ndarray) -> np.ndarray:
         """Calculate the basis function
