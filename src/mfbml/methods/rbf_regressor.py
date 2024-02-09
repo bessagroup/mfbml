@@ -24,6 +24,7 @@ class RBFKernelRegression:
                  ) -> None:
 
         # set random seed
+        self.seed = seed
         np.random.seed(seed)
         # determine whether to optimize the parameters or not
         self.params_optimize = params_optimize
@@ -119,7 +120,7 @@ class RBFKernelRegression:
                 self.sample_y_scaled.copy(),
                 test_size=self.portion_test,
                 shuffle=True,
-                random_state=42)
+                random_state=self.seed)
 
             # set parameters
             self._set_kernel_params(params=params)
