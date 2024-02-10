@@ -38,7 +38,16 @@ def create_experiment_data() -> None:
     2. the response variables are mae, mse, r2, and cpu time
     """
     # define problem sets
-    problem_sets = ['mf_Booth']
+    problem_sets = ['mf_Bohachevsky',
+                    'mf_Booth',
+                    'mf_Borehole',
+                    'mf_CurrinExp',
+                    'mf_Hartman3',
+                    'mf_Hartman6',
+                    'mf_Himmelblau',
+                    'mf_Park91A',
+                    'mf_Park91B',
+                    'mf_Sixhump']
 
     # define seed sets
     seed_sets = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -89,7 +98,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=300, seed=1)
+    data.sample(sampler='random', n_samples=3000, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
