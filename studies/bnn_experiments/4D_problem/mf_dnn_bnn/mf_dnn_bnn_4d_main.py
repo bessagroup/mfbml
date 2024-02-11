@@ -7,10 +7,9 @@ import pandas as pd
 import torch
 from sklearn.metrics import r2_score
 
-from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
-                                            normalized_mae,
-                                            normalized_rmse)
 from mfbml.methods.mf_dnn_bnn import MFDNNBNN
+from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
+                                            normalized_mae, normalized_rmse)
 
 
 def main():
@@ -95,7 +94,7 @@ def main():
     r2 = r2_score(test_responses_noiseless.numpy(), y)
 
     # calculate the log likelihood
-    log_likelihood = log_likelihood_value(
+    log_likelihood = mean_log_likelihood_value(
         test_responses_noisy.numpy(), y, total_unc)
 
     # lf nmae, nrmse, r2 score

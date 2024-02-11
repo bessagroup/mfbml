@@ -7,10 +7,9 @@ import pandas as pd
 import torch
 from sklearn.metrics import r2_score
 
-from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
-                                            normalized_mae,
-                                            normalized_rmse)
 from mfbml.methods.mf_dnn_bnn import MFDNNBNN
+from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
+                                            normalized_mae, normalized_rmse)
 
 
 def single_run(iter: int) -> dict[str, Any]:
@@ -69,13 +68,13 @@ def single_run(iter: int) -> dict[str, Any]:
     # mfdnnbnn.beta = np.array([0.8])
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 80000,
+                       "num_epochs": 800,
                        "print_iter": 100,
                        "data_split": True}
-    hf_train_config = {"num_epochs": 50000,
+    hf_train_config = {"num_epochs": 500,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 10000}
+                       "burn_in_epochs": 100}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -98,7 +97,7 @@ def single_run(iter: int) -> dict[str, Any]:
     r2 = r2_score(test_responses_noiseless.numpy(), y)
 
     # calculate the log likelihood
-    log_likelihood = log_likelihood_value(
+    log_likelihood = mean_log_likelihood_value(
         test_responses_noisy.numpy(), y, total_unc)
 
     # lf nmae, nrmse, r2 score

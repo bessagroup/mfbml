@@ -7,10 +7,9 @@ import pandas as pd
 import torch
 from sklearn.metrics import r2_score
 
-from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
-                                            normalized_mae,
-                                            normalized_rmse)
 from mfbml.methods.sequential_mf_bnn import SequentialMFBNN
+from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
+                                            normalized_mae, normalized_rmse)
 
 
 def main():
@@ -64,7 +63,7 @@ def main():
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 50000,
+                       "num_epochs": 10000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,

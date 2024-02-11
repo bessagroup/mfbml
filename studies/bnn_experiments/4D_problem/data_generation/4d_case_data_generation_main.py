@@ -15,7 +15,7 @@ def get_samples() -> None:
     # define samples information
     num_hf = 150
     num_lf = 25000
-    num_test = 2000
+    num_test = 100000
 
     # initialize the problem
     problem = Meng4D(noise_std=noise_std)
