@@ -62,13 +62,13 @@ def single_run(iter: int) -> dict:
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 800,
+                       "num_epochs": 80000,
                        "print_iter": 100,
                        "data_split": True}
-    hf_train_config = {"num_epochs": 500,
+    hf_train_config = {"num_epochs": 50000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 100}
+                       "burn_in_epochs": 10000}
 
     # train the MFDNNBNN object
     mfbnn.train(samples=samples,

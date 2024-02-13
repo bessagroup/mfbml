@@ -1,9 +1,9 @@
 #!/bin/bash
 # Torque directives (#PBS) must always be at the start of a job script!
 
-#PBS -N proposed_10runs
-#PBS -q mse
-#PBS -l nodes=1:ppn=24
+#PBS -N 4D_proposed_10runs
+#PBS -q guest
+#PBS -l nodes=1:ppn=12
 #PBS -o out.$PBS_JOBID
 #PBS -e err.$PBS_JOBID
 
