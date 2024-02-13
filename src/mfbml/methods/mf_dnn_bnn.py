@@ -153,8 +153,13 @@ class MFDNNBNN:
         # get the low-fidelity model prediction of the high-fidelity samples
         lf_hf_samples = self.predict_lf(self.hf_samples, output_format="torch")
         # get the difference between the high-fidelity and low-fidelity samples
-        dis_hf_lf_samples = self.hf_responses - \
-            torch.from_numpy(self.beta)*lf_hf_samples
+        if self.beta.shape == 2:
+            dis_hf_lf_samples = self.hf_responses - \
+                torch.from_numpy(self.beta[1])*lf_hf_samples - self.beta[0]
+        else:
+            dis_hf_lf_samples = self.hf_responses - \
+                torch.from_numpy(self.beta)*lf_hf_samples
+
         # get the discrepancy between the LFand LF samples
         dis_hf_lf_samples = self.normalize_diff_output(dis_hf_lf_samples)
         # set the samplers to be torch tensors
@@ -194,7 +199,10 @@ class MFDNNBNN:
         # scale the discrepancy to the original scale
         hy_pred = hy_pred * self.diff_std.numpy() + self.diff_mean.numpy()
         # get the final prediction
-        y = self.beta*lf_y + hy_pred
+        if self.beta.shape == 2:
+            y = self.beta[1]*lf_y + hy_pred + self.beta[0]
+        else:
+            y = self.beta*lf_y + hy_pred
 
         # uncertainties
         epistemic = epistemic * self.diff_std.numpy()
