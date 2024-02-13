@@ -8,10 +8,9 @@ import pandas as pd
 import torch
 from sklearn.metrics import r2_score
 
-from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
-                                            normalized_mae,
-                                            normalized_rmse)
 from mfbml.methods.bnn import BNNWrapper
+from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
+                                            normalized_mae, normalized_rmse)
 
 # in this script, the high-fidelity bnn model is trained using the HF data
 # Because the BNNWrapper will not scale data, so the data needs to be scaled.

@@ -1,6 +1,6 @@
 
 import pickle
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -12,12 +12,14 @@ from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
                                             normalized_mae, normalized_rmse)
 
 
-def main():
+def single_run(iter: int) -> dict[str, Any]:
+
+    print(f"iter: {iter}")
+
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
-    # print the shape of the data
-    print(f"Number of HF data: {data['hf_samples'].shape}")
-    print(f"Number of LF data: {data['lf_samples'].shape}")
+    data = pickle.load(open("../data_generation/data_20D_example.pkl", "rb"))
+    print(f"hf sample shape: {data['hf_samples'].shape}")
+    print(f"lf sample shape: {data['lf_samples'].shape}")
     # get the data
     hf_samples = data["hf_samples"]
     lf_samples = data["lf_samples"]
@@ -29,7 +31,7 @@ def main():
     lf_responses_noisy = data["lf_responses_noisy"]
 
     # design space
-    design_space = torch.tile(torch.Tensor([0, 1]), (hf_samples.shape[1], 1))
+    design_space = torch.tile(torch.Tensor([-3, 3]), (hf_samples.shape[1], 1))
 
     # create the samples and responses dictionary
     samples = {"lf": lf_samples,
@@ -39,39 +41,40 @@ def main():
                  "hf": hf_responses}
 
     # create the configuration of the low-fidelity model
-    lf_configure = {"in_features": 4,
-                    "hidden_features": [256, 256],
+    lf_configure = {"in_features": 20,
+                    "hidden_features": [200, 200],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
-                    "lr": 0.001,
-                    "weight_decay": 0.00001,
+                    "lr": 0.0001,
+                    "weight_decay": 0.00003,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
-    hf_configure = {"in_features": 4,
-                    "hidden_features": [50, 50],
+    hf_configure = {"in_features": 20,
+                    "hidden_features": [512, 512],
                     "out_features": 1,
-                    "activation": "Tanh",
+                    "activation": "ReLU",
                     "lr": 0.001,
-                    "sigma": 0.05}
+                    "sigma": 10.0}
 
     # create the MFDNNBNN object
     mfdnnbnn = MFDNNBNN(design_space=design_space,
                         lf_configure=lf_configure,
                         hf_configure=hf_configure,
-                        beta_optimize=False,
-                        beta_bounds=[-5, 5])
-    mfdnnbnn.beta = np.array([0.8])
+                        beta_optimize=True,
+                        beta_bounds=[-5, 5],
+                        discrepancy_normalization="hf")
+
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 20000,
+                       "num_epochs": 800,
                        "print_iter": 100,
                        "data_split": True}
-    hf_train_config = {"num_epochs": 20000,
+    hf_train_config = {"num_epochs": 500,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 5000}
+                       "burn_in_epochs": 100}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -82,9 +85,9 @@ def main():
 
     # predict the MFDNNBNN object
     y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(x=test_samples)
-    # print(f"aleatoric: {aleatoric}")
-    # print(f"epistemic: {epistemic}")
-    # print(f"total_unc: {total_unc}")
+    print(f"aleatoric: {aleatoric}")
+    print(f"epistemic: {epistemic}")
+    print(f"total_unc: {total_unc}")
     # lf prediction
     lf_y = mfdnnbnn.predict_lf(x=test_samples, output_format="numpy")
 
@@ -112,19 +115,28 @@ def main():
                "lf_nrmse": lf_nrmse,
                "lf_r2": lf_r2}
 
-    # print the results
-    print("===================== Results: =====================")
-    print(f"nmae: {nmae}")
-    print(f"nrmse: {nrmse}")
-    print(f"r2: {r2}")
-    print(f"log_likelihood: {log_likelihood}")
-    print(f"lf_nmae: {lf_nmae}")
-    print(f"lf_nrmse: {lf_nrmse}")
-    print(f"lf_r2: {lf_r2}")
-
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("results_mf_dnn_bnn_4D_problem.csv", index=False)
+    df.to_csv(f"mf_dnn_bnn_20d_results_run_{iter}.csv", index=False)
+
+    return results
+
+
+def main() -> None:
+    # create a pandas dataframe to store the results
+    results = pd.DataFrame(columns=["nmae",
+                                    "nrmse",
+                                    "r2",
+                                    "log_likelihood",
+                                    "lf_nmae",
+                                    "lf_nrmse",
+                                    "lf_r2"])
+
+    for iter in range(10):
+        result = single_run(iter)
+        # save the result to the dataframe
+        results.loc[iter] = result
+        results.to_csv("mf_dnn_bnn_20D_results.csv", index=False)
 
 
 if __name__ == "__main__":

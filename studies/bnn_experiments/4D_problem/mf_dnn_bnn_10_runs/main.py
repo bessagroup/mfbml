@@ -1,21 +1,23 @@
 
 import pickle
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import r2_score
 
-from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
-                                            normalized_mae,
-                                            normalized_rmse)
 from mfbml.methods.mf_dnn_bnn import MFDNNBNN
+from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
+                                            normalized_mae, normalized_rmse)
 
 
-def main():
+def single_run(iter: int) -> dict[str, Any]:
+
+    print(f"iter: {iter}")
+
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data_20D_example.pkl", "rb"))
+    data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
     print(f"hf sample shape: {data['hf_samples'].shape}")
     print(f"lf sample shape: {data['lf_samples'].shape}")
     # get the data
@@ -29,7 +31,7 @@ def main():
     lf_responses_noisy = data["lf_responses_noisy"]
 
     # design space
-    design_space = torch.tile(torch.Tensor([-3, 3]), (hf_samples.shape[1], 1))
+    design_space = torch.tile(torch.Tensor([0, 1]), (hf_samples.shape[1], 1))
 
     # create the samples and responses dictionary
     samples = {"lf": lf_samples,
@@ -39,40 +41,41 @@ def main():
                  "hf": hf_responses}
 
     # create the configuration of the low-fidelity model
-    lf_configure = {"in_features": 20,
-                    "hidden_features": [200, 200],
+    lf_configure = {"in_features": 4,
+                    "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
-                    "lr": 0.0001,
-                    "weight_decay": 0.00003,
+                    "lr": 0.001,
+                    "weight_decay": 0.000001,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
-    hf_configure = {"in_features": 20,
-                    "hidden_features": [512, 512],
+    hf_configure = {"in_features": 4,
+                    "hidden_features": [50, 50],
                     "out_features": 1,
-                    "activation": "ReLU",
+                    "activation": "Tanh",
                     "lr": 0.001,
-                    "sigma": 10.0}
+                    "sigma": 0.05}
 
     # create the MFDNNBNN object
     mfdnnbnn = MFDNNBNN(design_space=design_space,
                         lf_configure=lf_configure,
                         hf_configure=hf_configure,
-                        beta_optimize=False,
-                        beta_bounds=[-5, 5])
+                        beta_optimize=True,
+                        beta_bounds=[-5, 5],
+                        discrepancy_normalization="hf")
     # change the value of beta
-    # mfdnnbnn.beta = np.array([0.8])
+
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 80000,
+                       "num_epochs": 20000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 10000}
+                       "burn_in_epochs": 20000}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -83,9 +86,6 @@ def main():
 
     # predict the MFDNNBNN object
     y, epistemic, total_unc, aleatoric = mfdnnbnn.predict(x=test_samples)
-    print(f"aleatoric: {aleatoric}")
-    print(f"epistemic: {epistemic}")
-    print(f"total_unc: {total_unc}")
     # lf prediction
     lf_y = mfdnnbnn.predict_lf(x=test_samples, output_format="numpy")
 
@@ -95,7 +95,7 @@ def main():
     r2 = r2_score(test_responses_noiseless.numpy(), y)
 
     # calculate the log likelihood
-    log_likelihood = log_likelihood_value(
+    log_likelihood = mean_log_likelihood_value(
         test_responses_noisy.numpy(), y, total_unc)
 
     # lf nmae, nrmse, r2 score
@@ -111,11 +111,34 @@ def main():
                "log_likelihood": log_likelihood,
                "lf_nmae": lf_nmae,
                "lf_nrmse": lf_nrmse,
-               "lf_r2": lf_r2}
+               "lf_r2": lf_r2,
+               "beta_0": mfdnnbnn.beta[0],
+               "beta_1": mfdnnbnn.beta[1], }
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("mf_dnn_bnn_20d_results.csv", index=False)
+    df.to_csv(f"mf_dnn_bnn_4d_results_run_{iter}.csv", index=False)
+
+    return results
+
+
+def main() -> None:
+    # create a pandas dataframe to store the results
+    results = pd.DataFrame(columns=["nmae",
+                                    "nrmse",
+                                    "r2",
+                                    "log_likelihood",
+                                    "lf_nmae",
+                                    "lf_nrmse",
+                                    "lf_r2",
+                                    "beta_0",
+                                    "beta_1"])
+
+    for iter in range(10):
+        result = single_run(iter)
+        # save the result to the dataframe
+        results.loc[iter] = result
+        results.to_csv("mf_dnn_bnn_4D_results.csv", index=False)
 
 
 if __name__ == "__main__":
