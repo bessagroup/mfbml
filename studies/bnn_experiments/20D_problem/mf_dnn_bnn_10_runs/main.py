@@ -68,13 +68,13 @@ def single_run(iter: int) -> dict[str, Any]:
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 800,
+                       "num_epochs": 80000,
                        "print_iter": 100,
                        "data_split": True}
-    hf_train_config = {"num_epochs": 500,
+    hf_train_config = {"num_epochs": 50000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 100}
+                       "burn_in_epochs": 10000}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -113,7 +113,9 @@ def single_run(iter: int) -> dict[str, Any]:
                "log_likelihood": log_likelihood,
                "lf_nmae": lf_nmae,
                "lf_nrmse": lf_nrmse,
-               "lf_r2": lf_r2}
+               "lf_r2": lf_r2,
+               "beta_0": mfdnnbnn.beta[0],
+               "beta_1": mfdnnbnn.beta[1],}
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
@@ -130,7 +132,9 @@ def main() -> None:
                                     "log_likelihood",
                                     "lf_nmae",
                                     "lf_nrmse",
-                                    "lf_r2"])
+                                    "lf_r2",
+                                    "beta_0",
+                                    "beta_1"])
 
     for iter in range(10):
         result = single_run(iter)
