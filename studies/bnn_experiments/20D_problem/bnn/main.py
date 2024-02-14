@@ -91,9 +91,9 @@ def single_run(iter: int) -> None:
     # train the bnn model
     bnn_model.train(x=hf_samples_scaled,
                     y=hf_responses_scaled,
-                    num_epochs=500,
+                    num_epochs=50000,
                     sample_freq=100,
-                    burn_in_epochs=100,
+                    burn_in_epochs=10000,
                     print_info=True)
 
     # predict the MFDNNBNN object
@@ -124,6 +124,8 @@ def single_run(iter: int) -> None:
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
     df.to_csv(f"bnn_20D_problem_{iter}.csv", index=False)
+
+    return results
 
 
 def main() -> None:
