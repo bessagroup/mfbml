@@ -9,7 +9,7 @@ import torch
 from sklearn.metrics import r2_score
 
 from mfbml.methods.bnn import BNNWrapper
-from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
+from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
                                             normalized_mae, normalized_rmse)
 
 # in this script, the high-fidelity bnn model is trained using the HF data
@@ -55,7 +55,8 @@ def normalize_outputs(y: torch.Tensor) -> torch.Tensor:
     return y
 
 
-def main() -> None:
+def single_run(iter: int) -> None:
+    print(f"Running iteration {iter}")
 
     # read data from ../data_generation/data.pkl
     data = pickle.load(open("../data_generation/data_20D_example.pkl", "rb"))
@@ -90,9 +91,9 @@ def main() -> None:
     # train the bnn model
     bnn_model.train(x=hf_samples_scaled,
                     y=hf_responses_scaled,
-                    num_epochs=50000,
+                    num_epochs=500,
                     sample_freq=100,
-                    burn_in_epochs=10000,
+                    burn_in_epochs=100,
                     print_info=True)
 
     # predict the MFDNNBNN object
@@ -111,7 +112,7 @@ def main() -> None:
     r2 = r2_score(test_responses_noiseless.numpy(), y)
 
     # calculate the log likelihood
-    log_likelihood = log_likelihood_value(
+    log_likelihood = mean_log_likelihood_value(
         test_responses_noisy.numpy(), y, total_unc)
 
     # save the results
@@ -122,7 +123,17 @@ def main() -> None:
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("bnn_20D_problem.csv", index=False)
+    df.to_csv(f"bnn_20D_problem_{iter}.csv", index=False)
+
+
+def main() -> None:
+    results = pd.DataFrame(columns=["nmae", "nrmse", "r2", "log_likelihood"])
+
+    for i in range(10):
+        result = single_run(i)
+        # save the result to the dataframe
+        results.loc[i] = result
+        results.to_csv("mf_dnn_bnn_4D_results.csv", index=False)
 
 
 if __name__ == "__main__":

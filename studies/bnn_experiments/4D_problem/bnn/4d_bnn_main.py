@@ -8,10 +8,9 @@ import pandas as pd
 import torch
 from sklearn.metrics import r2_score
 
-from mfbml.metrics.accuracy_metrics import (log_likelihood_value,
-                                            normalized_mae,
-                                            normalized_rmse)
 from mfbml.methods.bnn import BNNWrapper
+from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
+                                            normalized_mae, normalized_rmse)
 
 # in this script, the high-fidelity bnn model is trained using the HF data
 # Because the BNNWrapper will not scale data, so the data needs to be scaled.
@@ -56,8 +55,8 @@ def normalize_outputs(y: torch.Tensor) -> torch.Tensor:
     return y
 
 
-def main() -> None:
-
+def single_run(iter: int) -> dict:
+    print(f"Running iteration {iter}...")
     # read data from ../data_generation/data.pkl
     data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
     print(f"HF samples: {data['hf_samples'].shape}")
@@ -91,9 +90,9 @@ def main() -> None:
     # train the bnn model
     bnn_model.train(x=hf_samples_scaled,
                     y=hf_responses_scaled,
-                    num_epochs=20000,
+                    num_epochs=50000,
                     sample_freq=100,
-                    burn_in_epochs=5000,
+                    burn_in_epochs=20000,
                     print_info=True)
 
     # predict the MFDNNBNN object
@@ -112,7 +111,7 @@ def main() -> None:
     r2 = r2_score(test_responses_noiseless.numpy(), y)
 
     # calculate the log likelihood
-    log_likelihood = log_likelihood_value(
+    log_likelihood = mean_log_likelihood_value(
         test_responses_noisy.numpy(), y, total_unc)
 
     # save the results
@@ -123,7 +122,19 @@ def main() -> None:
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])
-    df.to_csv("bnn_4D_problem.csv", index=False)
+    df.to_csv(f"bnn_4D_problem_{iter}.csv", index=False)
+
+    return results
+
+
+def main() -> None:
+    results = pd.DataFrame(columns=["nmae", "nrmse", "r2", "log_likelihood"])
+
+    for i in range(10):
+        result = single_run(i)
+        # save the result to the dataframe
+        results.loc[i] = result
+        results.to_csv("mf_dnn_bnn_4D_results.csv", index=False)
 
 
 if __name__ == "__main__":
