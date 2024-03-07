@@ -27,6 +27,7 @@ class MFRBFKriging:
         optimizer: Any = None,
         optimizer_restart: int = 0,
         kernel: Any = None,
+        lf_poly_order: str = "linear",
         seed: int = 42,
     ) -> None:
 
@@ -42,6 +43,8 @@ class MFRBFKriging:
         else:
             self.kernel = kernel
 
+        # get lf polynomial order
+        self.lf_poly_order = lf_poly_order
         # define the lf model
         self.lf_model = RBFKernelRegression(
             design_space=self.bounds,
@@ -76,7 +79,8 @@ class MFRBFKriging:
         # rbf surrogate model would normalize the inputs directly
         self.lf_model.train(samples["lf"], responses["lf"])
         # prediction of low-fidelity at high-fidelity locations
-        self.f = self._basis_function(self.sample_xh)
+        self.f = self._basis_function(
+            self.sample_xh, poly_order=self.lf_poly_order)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
@@ -92,7 +96,7 @@ class MFRBFKriging:
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the normalized predicted mean
-        f = self._basis_function(X)
+        f = self._basis_function(X, poly_order=self.lf_poly_order)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
         # scaled the mean back to original scale
@@ -206,13 +210,16 @@ class MFRBFKriging:
 
         return self.lf_model.predict(X)
 
-    def _basis_function(self, x: np.ndarray) -> np.ndarray:
+    def _basis_function(self, x: np.ndarray,
+                        poly_order: str = "linear") -> np.ndarray:
         """Calculate the basis function
 
         Parameters
         ----------
         x : np.ndarray
             sample points
+        poly_order : str, optional
+            order of polynomial, by default "linear"
 
         Returns
         -------
@@ -222,8 +229,25 @@ class MFRBFKriging:
         # get the prediction of low-fidelity at high-fidelity locations
         f = self.predict_lf(x)
         f = (f-self.yh_mean)/self.yh_std
-        # assemble the basis function by having the first column as 1
-        f = np.hstack((np.ones((f.shape[0], 1)), f))
+
+        if poly_order == "ordinary":
+            # ordinary polynomial (it retrieves back to single fidelity)
+            f = np.ones((f.shape[0], 1))
+        elif poly_order == "linear_without_const":
+            # assemble the basis function without the first column
+            f = f
+        elif poly_order == "linear":
+            # assemble the basis function by having the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f))
+        elif poly_order == "quadratic":
+            # assemble the basis function with the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2))
+        elif poly_order == "cubic":
+            # assemble the basis function with the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2, f**3))
+
+        else:
+            raise ValueError("Invalid polynomial order")
 
         return f
 

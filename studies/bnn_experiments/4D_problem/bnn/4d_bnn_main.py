@@ -134,7 +134,7 @@ def main() -> None:
         result = single_run(i)
         # save the result to the dataframe
         results.loc[i] = result
-        results.to_csv("mf_dnn_bnn_4D_results.csv", index=False)
+        results.to_csv("bnn_4D_results.csv", index=False)
 
 
 if __name__ == "__main__":
