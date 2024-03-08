@@ -19,8 +19,7 @@ from mfpml.design_of_experiment.multifidelity_samplers import MFLatinHyperCube
 from sklearn.metrics import r2_score
 
 from mfbml.methods.mf_rbf_kriging import MFRBFKriging
-from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
-                                            normalized_mae, normalized_rmse)
+from mfbml.metrics.accuracy_metrics import normalized_mae, normalized_rmse
 from mfbml.problems.low_dimension_problems import register_problem
 
 # ===========================================================================
@@ -49,7 +48,7 @@ def create_experiment_data() -> None:
                     'mf_Sixhump']
 
     # define seed sets
-    seed_sets = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    seed_sets = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 
     # define the number of lf and hf samples
     num_lf_sample = [100]
@@ -113,10 +112,6 @@ def create_experiment_data() -> None:
     data.add_output_parameter('quadratic_normalized_rmse')
     data.add_output_parameter('quadratic_r2')
     data.add_output_parameter('quadratic_cpu_time')
-    data.add_output_parameter('cubic_normalized_mae')
-    data.add_output_parameter('cubic_normalized_rmse')
-    data.add_output_parameter('cubic_r2')
-    data.add_output_parameter('cubic_cpu_time')
     # save the experiment data
     data.store(filename='exp_{}'.format('mf_rbf_gpr'))
 
@@ -216,21 +211,6 @@ def run_method(
     quadratic_nmae = normalized_mae(test_y, quadratic_model_pred_y)
     quadratic_nrmse = normalized_rmse(test_y, quadratic_model_pred_y)
     quadratic_r2 = r2_score(test_y, quadratic_model_pred_y)
-    # ==================== cubic model ==================== #
-    cubic_model = MFRBFKriging(
-        design_space=func.input_domain,
-        lf_poly_order="cubic",
-        optimizer_restart=10)
-    start_time = time.time()
-    cubic_model.train(sample_x, sample_y)
-    cubic_model_pred_y, cubic_model_pred_std = cubic_model.predict(
-        test_x['hf'], return_std=True)
-    end_time = time.time()
-    cubic_cpu_time = end_time - start_time
-    # accuracy test
-    cubic_nmae = normalized_mae(test_y, cubic_model_pred_y)
-    cubic_nrmse = normalized_rmse(test_y, cubic_model_pred_y)
-    cubic_r2 = r2_score(test_y, cubic_model_pred_y)
 
     return {
         'linear_without_bias_normalized_mae': linear_without_bias_nmae,
@@ -245,10 +225,6 @@ def run_method(
         'quadratic_normalized_rmse': quadratic_nrmse,
         'quadratic_r2': quadratic_r2,
         'quadratic_cpu_time': quadratic_cpu_time,
-        'cubic_normalized_mae': cubic_nmae,
-        'cubic_normalized_rmse': cubic_nrmse,
-        'cubic_r2': cubic_r2,
-        'cubic_cpu_time': cubic_cpu_time
     }
 
 
@@ -320,10 +296,6 @@ class MFBMLExperiments(DataGenerator):
                   results['quadratic_normalized_rmse'])
             print("quadratic_r2: ", results['quadratic_r2'])
             print("quadratic_cpu_time: ", results['quadratic_cpu_time'])
-            print("cubic_normalized_mae: ", results['cubic_normalized_mae'])
-            print("cubic_normalized_rmse: ", results['cubic_normalized_rmse'])
-            print("cubic_r2: ", results['cubic_r2'])
-            print("cubic_cpu_time: ", results['cubic_cpu_time'])
 
             print("=====================================")
             # get the output data
@@ -342,10 +314,6 @@ class MFBMLExperiments(DataGenerator):
             sample.output_data['quadratic_normalized_rmse'] = results['quadratic_normalized_rmse']
             sample.output_data['quadratic_r2'] = results['quadratic_r2']
             sample.output_data['quadratic_cpu_time'] = results['quadratic_cpu_time']
-            sample.output_data['cubic_normalized_mae'] = results['cubic_normalized_mae']
-            sample.output_data['cubic_normalized_rmse'] = results['cubic_normalized_rmse']
-            sample.output_data['cubic_r2'] = results['cubic_r2']
-            sample.output_data['cubic_cpu_time'] = results['cubic_cpu_time']
 
         except Exception as e:
             # if the job failed, then we set the progress to be failed
@@ -365,11 +333,6 @@ class MFBMLExperiments(DataGenerator):
             sample.output_data['quadratic_normalized_rmse'] = None
             sample.output_data['quadratic_r2'] = None
             sample.output_data['quadratic_cpu_time'] = None
-            sample.output_data['cubic_normalized_mae'] = None
-            sample.output_data['cubic_normalized_rmse'] = None
-            sample.output_data['cubic_r2'] = None
-            sample.output_data['cubic_cpu_time'] = None
-
         return data
 
 # function to execute the experiment data
@@ -388,7 +351,7 @@ def execute_experimentdata() -> None:
 
 def main() -> None:
     """ Main script distinguishes between the master and the workers."""
-    # f3dasm.HPC_JOBID = 0
+    f3dasm.HPC_JOBID = 0
     if f3dasm.HPC_JOBID == 0:
         create_experiment_data()
         execute_experimentdata()
