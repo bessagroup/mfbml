@@ -1,5 +1,5 @@
 import time
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 import numpy as np
 from numpy.linalg import cholesky, solve
@@ -45,7 +45,7 @@ class MFRBFGPR:
                                             optimizer_restart=5,
                                             seed=seed)
 
-    def train(self, samples: dict, responses: dict) -> None:
+    def train(self, samples: List, responses: List) -> None:
         """Train the hierarchical gaussian process model
 
         Parameters
@@ -60,24 +60,29 @@ class MFRBFGPR:
         """
 
         # get samples and normalize them
-        self.sample_xh = samples["hf"]
-        self.sample_xl = samples["lf"]
+        self.sample_xh = samples[0]
+        self.sample_xl = samples[1]
         self.sample_xh_scaled = self.normalize_input(self.sample_xh)
         self.sample_xl_scaled = self.normalize_input(self.sample_xl)
 
         # get responses and normalize them
-        self.sample_yh = responses["hf"]
-        self.sample_yl = responses["lf"]
+        self.sample_yh = responses[0]
+        self.sample_yl = responses[1]
         self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
         self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
         # rbf surrogate model would normalize the inputs directly
-        self.lf_model.train(samples["lf"], responses["lf"])
+        start_time = time.time()
+        self.lf_model.train(samples[1], responses[1])
+        lf_train_time = time.time()
         # prediction of low-fidelity at high-fidelity locations
         self.f = self._basis_function(self.sample_xh)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
         self._update_parameters()
+        end_time = time.time()
+        self.lf_training_time = lf_train_time - start_time
+        self.hf_training_time = end_time - lf_train_time
 
     def predict(self,
                 X: np.ndarray,
