@@ -20,8 +20,10 @@ class MFRBFGPR:
         optimizer_restart: int = 0,
         kernel: Any = None,
         noise_prior: float = None,
+        seed: int = 42,
     ) -> None:
 
+        np.random.seed(seed)
         self.bounds = design_space
         self.optimizer = optimizer
         self.optimizer_restart = optimizer_restart
@@ -40,7 +42,8 @@ class MFRBFGPR:
         self.lf_model = RBFKernelRegression(design_space=self.bounds,
                                             params_optimize=True,
                                             noise_data=True,
-                                            optimizer_restart=5)
+                                            optimizer_restart=5,
+                                            seed=seed)
 
     def train(self, samples: dict, responses: dict) -> None:
         """Train the hierarchical gaussian process model
@@ -70,24 +73,23 @@ class MFRBFGPR:
         # rbf surrogate model would normalize the inputs directly
         self.lf_model.train(samples["lf"], responses["lf"])
         # prediction of low-fidelity at high-fidelity locations
-        f = self.predict_lf(self.sample_xh)
-        self.f = (f-self.yh_mean)/self.yh_std
+        self.f = self._basis_function(self.sample_xh)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
         self._update_parameters()
 
     def predict(self,
-                x_predict: np.ndarray,
+                X: np.ndarray,
                 return_std: bool = False
                 ) -> Tuple[np.ndarray, np.ndarray]:
         # normalize the input
-        sample_new = self.normalize_input(x_predict)
+        sample_new = self.normalize_input(X)
         sample_new = np.atleast_2d(sample_new)
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the predicted mean
-        f = (self.predict_lf(x_predict)-self.yh_mean)/self.yh_std
+        f = self._basis_function(X)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
         fmean = (fmean * self.yh_std + self.yh_mean).reshape(-1, 1)
@@ -242,12 +244,12 @@ class MFRBFGPR:
         self.logp = (-0.5 * self._num_xh * self.sigma2 -
                      np.sum(np.log(np.diag(self.L)))).item()
 
-    def predict_lf(self, test_xl: np.ndarray) -> np.ndarray:
+    def predict_lf(self, X: np.ndarray) -> np.ndarray:
         """Predict the low-fidelity responses
 
         Parameters
         ----------
-        test_xl : np.ndarray
+        X : np.ndarray
             test samples
 
         Returns
@@ -255,7 +257,7 @@ class MFRBFGPR:
         np.ndarray
             predicted responses of low-fidelity
         """
-        return self.lf_model.predict(test_xl)
+        return self.lf_model.predict(X)
 
     def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
 
@@ -269,6 +271,27 @@ class MFRBFGPR:
         self.yh_std = np.std(outputs)
 
         return (outputs - self.yh_mean) / self.yh_std
+
+    def _basis_function(self, x: np.ndarray) -> np.ndarray:
+        """Calculate the basis function
+
+        Parameters
+        ----------
+        x : np.ndarray
+            sample points
+
+        Returns
+        -------
+        np.ndarray
+            basis function
+        """
+        # get the prediction of low-fidelity at high-fidelity locations
+        f = self.predict_lf(x)
+        f = (f-self.yh_mean)/self.yh_std
+        # assemble the basis function by having the first column as 1
+        f = np.hstack((np.ones((f.shape[0], 1)), f))
+
+        return f
 
     @property
     def _get_lf_model(self) -> Any:

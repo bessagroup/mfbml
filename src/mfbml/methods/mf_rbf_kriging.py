@@ -1,15 +1,23 @@
-# standard libraries
-import time
+#                                                                       Modules
+# =============================================================================
+# standard library
 from typing import Any, Tuple
 
-# third party
+# third party modules
 import numpy as np
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
 
-# local
+# local functions
 from .rbf_kernel import RBF
 from .rbf_regressor import RBFKernelRegression
+
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'Jiaxiang Yi'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Development'
+# =============================================================================
 
 
 class MFRBFKriging:
@@ -19,8 +27,11 @@ class MFRBFKriging:
         optimizer: Any = None,
         optimizer_restart: int = 0,
         kernel: Any = None,
+        lf_poly_order: str = "linear",
+        seed: int = 42,
     ) -> None:
 
+        np.random.seed(seed)
         self.bounds = design_space
         self.optimizer = optimizer
         self.optimizer_restart = optimizer_restart
@@ -32,11 +43,14 @@ class MFRBFKriging:
         else:
             self.kernel = kernel
 
+        # get lf polynomial order
+        self.lf_poly_order = lf_poly_order
         # define the lf model
         self.lf_model = RBFKernelRegression(
             design_space=self.bounds,
             params_optimize=True,
-            optimizer_restart=1)
+            optimizer_restart=1,
+            seed=seed,)
 
     def train(self, samples: dict, responses: dict) -> None:
         """Train the hierarchical Kriging model
@@ -65,24 +79,24 @@ class MFRBFKriging:
         # rbf surrogate model would normalize the inputs directly
         self.lf_model.train(samples["lf"], responses["lf"])
         # prediction of low-fidelity at high-fidelity locations
-        f = self.predict_lf(self.sample_xh)
-        self.f = (f-self.yh_mean)/self.yh_std
+        self.f = self._basis_function(
+            self.sample_xh, poly_order=self.lf_poly_order)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
         self._update_parameters()
 
     def predict(self,
-                x_predict: np.ndarray,
+                X: np.ndarray,
                 return_std: bool = False
                 ) -> Tuple[np.ndarray, np.ndarray]:
         # normalize the input
-        sample_new = self.normalize_input(x_predict)
+        sample_new = self.normalize_input(X)
         sample_new = np.atleast_2d(sample_new)
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the normalized predicted mean
-        f = (self.predict_lf(x_predict) - self.yh_mean) / self.yh_std
+        f = self._basis_function(X, poly_order=self.lf_poly_order)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
         # scaled the mean back to original scale
@@ -92,17 +106,12 @@ class MFRBFKriging:
             return fmean.reshape(-1, 1)
         else:
             delta = solve(self.L.T, solve(self.L, knew))
-            mse = self.sigma2 * (
-                1
-                - np.diag(knew.T.dot(delta))
-                + np.diag(
-                    np.dot(
-                        (knew.T.dot(self.KF) - f),
-                        (knew.T.dot(self.KF) - f).T,
-                    )
-                )
-                / self.f.T.dot(self.KF)
-            )
+            R = f.T - np.dot(self.f.T, delta)
+            mse = self.sigma2 * \
+                (1 - np.diag(np.dot(knew.T, delta)) +
+                 np.diag(R.T.dot(solve(self.ld.T, solve(self.ld, R))))
+                 )
+
             std = np.sqrt(np.maximum(mse, 0)).reshape(-1, 1)
             std = std * self.yh_std
 
@@ -197,9 +206,50 @@ class MFRBFKriging:
         self.logp = (-0.5 * self._num_xh * np.log(self.sigma2) -
                      np.sum(np.log(np.diag(self.L)))).item()
 
-    def predict_lf(self, test_xl: np.ndarray) -> np.ndarray:
+    def predict_lf(self, X: np.ndarray) -> np.ndarray:
 
-        return self.lf_model.predict(test_xl)
+        return self.lf_model.predict(X)
+
+    def _basis_function(self, x: np.ndarray,
+                        poly_order: str = "linear") -> np.ndarray:
+        """Calculate the basis function
+
+        Parameters
+        ----------
+        x : np.ndarray
+            sample points
+        poly_order : str, optional
+            order of polynomial, by default "linear"
+
+        Returns
+        -------
+        np.ndarray
+            basis function
+        """
+        # get the prediction of low-fidelity at high-fidelity locations
+        f = self.predict_lf(x)
+        f = (f-self.yh_mean)/self.yh_std
+
+        if poly_order == "ordinary":
+            # ordinary polynomial (it retrieves back to single fidelity)
+            f = np.ones((f.shape[0], 1))
+        elif poly_order == "linear_without_const":
+            # assemble the basis function without the first column
+            f = f
+        elif poly_order == "linear":
+            # assemble the basis function by having the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f))
+        elif poly_order == "quadratic":
+            # assemble the basis function with the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2))
+        elif poly_order == "cubic":
+            # assemble the basis function with the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2, f**3))
+
+        else:
+            raise ValueError("Invalid polynomial order")
+
+        return f
 
     def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
         """Normalize the input into [0, 1] according to the bounds
