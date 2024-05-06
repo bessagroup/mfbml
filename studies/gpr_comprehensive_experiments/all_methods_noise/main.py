@@ -50,18 +50,18 @@ def create_experiment_data() -> None:
                     'mf_Sixhump']
 
     # define seed sets
-    seed_sets = [i for i in range(1, 6)]
+    seed_sets = [1 , 2, 3, 4, 5]
 
     # define the number of lf and hf samples
-    num_lf_sample = [100 + 20*i for i in range(1, 11)]
-    num_hf_sample = [5 + 5*i for i in range(0, 20)]
+    num_lf_sample = [50, 75, 100, 125, 150, 175,200]
+    num_hf_sample = [5, 10, 15, 20, 25, 30]
 
-    # define noise level for high fidelity
+    # # define noise level for high fidelity
     noise_levels = [0.1, 0.3, 0.5]
 
+
     # method sets
-    method_sets = ['mf_rbf_gpr', 'scaled_kriging',
-                   'hk', 'cokriging']
+    method_sets = ['cokriging','mf_rbf_gpr', 'scaled_kriging','hk']
 
     # create design variables
     design_variables = []
@@ -74,7 +74,7 @@ def create_experiment_data() -> None:
                             design_variables.append(
                                 [method, problem, seed, num_lf, num_hf, noise_std])
 
-    # save design variables tp pandas dataframe
+    # save design variables tp pandas data-frame
     design_variables = pd.DataFrame(design_variables,
                                     columns=['method', 'problem', 'seed',
                                              'num_lf', "num_hf", "noise_std"])
@@ -108,7 +108,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=12000, seed=1)
+    data.sample(sampler='random', n_samples=25200, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['method'] = design_variables['method']
@@ -186,7 +186,7 @@ def run_method(
     nmae = normalized_mae(test_y, pred_y)
     nrmse = normalized_rmse(test_y, pred_y)
     r2 = r2_score(test_y, pred_y)
-    log_likelihood = mean_log_likelihood_value(y_true=test_y_noise,
+    mean_log_likelihood = mean_log_likelihood_value(y_true=test_y_noise,
                                                y_pred_mean=pred_y,
                                                y_pred_std=pred_std)
     # get noise estimation
@@ -202,7 +202,7 @@ def run_method(
             'lf_training_time': lf_training_time,
             'hf_training_time': hf_training_time,
             'inference_time': inference_time,
-            "log_likelihood": log_likelihood,
+            "mean_log_likelihood": mean_log_likelihood,
             "learned_noise_std": learned_noise_std}
 
 
@@ -265,7 +265,7 @@ class MFBMLExperiments(DataGenerator):
         print("lf_training_time: ", results['lf_training_time'])
         print("hf_training_time: ", results['hf_training_time'])
         print("inference_time: ", results['inference_time'])
-        print("log_likelihood: ", results['log_likelihood'])
+        print("mean_log_likelihood: ", results['mean_log_likelihood'])
         print("learned_noise_std: ", results['learned_noise_std'])
         print("=====================================")
         # update the output data
@@ -273,7 +273,7 @@ class MFBMLExperiments(DataGenerator):
         sample.output_data['normalized_rmse'] = results['normalized_rmse']
         sample.output_data['r2'] = results['r2']
         sample.output_data['inference_time'] = results['inference_time']
-        sample.output_data['log_likelihood'] = results['log_likelihood']
+        sample.output_data['mean_log_likelihood'] = results['mean_log_likelihood']
         sample.output_data['learned_noise_std'] = results['learned_noise_std']
         sample.output_data['lf_training_time'] = results['lf_training_time']
         sample.output_data['hf_training_time'] = results['hf_training_time']
