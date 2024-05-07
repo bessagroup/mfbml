@@ -287,7 +287,7 @@ def execute_experimentdata() -> None:
     data = f3dasm.ExperimentData.from_file(
         filename='exp_{}'.format('noise_doe_experiments'))
     # run the function
-    data.evaluate(MFBMLExperiments(), mode='sequential')
+    data.evaluate(MFBMLExperiments(), mode='cluster')
     # data.store(filename='exp_{}'.format('mf_rbf_gpr_results'))
 
 
@@ -301,10 +301,10 @@ def main() -> None:
         execute_experimentdata()
     elif f3dasm.HPC_JOBID > 0:
         try:
-            sleep(3*f3dasm.HPC_JOBID)
+            sleep(10*f3dasm.HPC_JOBID)
             execute_experimentdata()
         except:
-            sleep(4*f3dasm.HPC_JOBID)
+            sleep(20*f3dasm.HPC_JOBID)
             execute_experimentdata()
 
 
