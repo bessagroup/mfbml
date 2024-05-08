@@ -286,7 +286,7 @@ def execute_experimentdata() -> None:
     data = f3dasm.ExperimentData.from_file(
         filename='exp_{}'.format('noise_doe_experiments'))
     # run the function
-    data.evaluate(MFBMLExperiments(), mode='sequential')
+    data.evaluate(MFBMLExperiments(), mode='cluster')
     # data.store(filename='exp_{}'.format('mf_rbf_gpr_results'))
 
 
