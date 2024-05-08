@@ -118,7 +118,7 @@ def create_experiment_data() -> None:
     data.add_output_parameter('mkg_normalized_rmse')
     data.add_output_parameter('mkg_r2')
     data.add_output_parameter("mkg_mean_log_likelihood")
-    data.add_output_parameter("mkf_lf_training_time")
+    data.add_output_parameter("mkg_lf_training_time")
     data.add_output_parameter("mkg_hf_training_time")
     data.add_output_parameter('mkg_inference_time')
     data.add_output_parameter("mkg_learned_noise_std")
