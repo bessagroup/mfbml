@@ -42,7 +42,7 @@ class MFRBFGPR:
         self.lf_model = RBFKernelRegression(design_space=self.bounds,
                                             params_optimize=True,
                                             noise_data=True,
-                                            optimizer_restart=5,
+                                            optimizer_restart=optimizer_restart,
                                             seed=seed)
 
     def train(self, samples: List, responses: List) -> None:
