@@ -38,24 +38,24 @@ def create_experiment_data() -> None:
     2. the response variables are mae, mse, r2, and cpu time
     """
     # define problem sets
-    # problem_sets = ['mf_Bohachevsky',
-    #                 'Forrester_1b',
-    #                 'mf_Booth',
-    #                 'mf_Borehole',
-    #                 'mf_CurrinExp',
-    #                 'mf_Hartman3',
-    #                 'mf_Hartman6',
-    #                 'mf_Park91A',
-    #                 'mf_Park91B',
-    #                 'mf_Sixhump']
-    problem_sets = ['Forrester_1b']
+    problem_sets = ['mf_Bohachevsky',
+                    'Forrester_1b',
+                    'mf_Booth',
+                    'mf_Borehole',
+                    'mf_CurrinExp',
+                    'mf_Hartman3',
+                    'mf_Hartman6',
+                    'mf_Park91A',
+                    'mf_Park91B',
+                    'mf_Sixhump']
+    # problem_sets = ['Forrester_1b']
 
     # define seed sets
-    seed_sets = [10, 11, 20, 21, 30, 31, 40, 41, 50, 51]
+    seed_sets = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
     # define the number of lf and hf samples
     num_lf_sample = [200]
-    num_hf_sample = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+    num_hf_sample = [5, 10, 15, 20, 25, 30]
 
     # # define noise level for high fidelity
     noise_levels = [0.3]
@@ -91,6 +91,10 @@ def create_experiment_data() -> None:
                                                 'mf_Park91B',
                                                 'mf_Sixhump']))
     domain.add('seed', DiscreteParameter(lower_bound=1, upper_bound=10))
+    domain.add('method', CategoricalParameter(['mf_rbf_gpr',
+                                               'scaled_kriging',
+                                               'hk',
+                                               'cokriging']))
     domain.add('num_lf', DiscreteParameter(
         lower_bound=100, upper_bound=200))
     domain.add('num_hf', DiscreteParameter(
@@ -100,7 +104,7 @@ def create_experiment_data() -> None:
 
     # create the experiment data
     data = ExperimentData(domain=domain)
-    data.sample(sampler='random', n_samples=90, seed=1)
+    data.sample(sampler='random', n_samples=600, seed=1)
 
     # replace the samples with the mesh_grid
     data.input_data.data['problem'] = design_variables['problem']
@@ -114,7 +118,7 @@ def create_experiment_data() -> None:
     data.add_output_parameter('mkg_normalized_rmse')
     data.add_output_parameter('mkg_r2')
     data.add_output_parameter("mkg_mean_log_likelihood")
-    data.add_output_parameter("mkf_lf_training_time")
+    data.add_output_parameter("mkg_lf_training_time")
     data.add_output_parameter("mkg_hf_training_time")
     data.add_output_parameter('mkg_inference_time')
     data.add_output_parameter("mkg_learned_noise_std")

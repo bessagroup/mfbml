@@ -3,7 +3,6 @@
 import numpy as np
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
-from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 
 from .rbf_kernel import RBF
