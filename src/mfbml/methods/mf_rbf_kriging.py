@@ -1,6 +1,7 @@
 #                                                                       Modules
 # =============================================================================
 # standard library
+import time
 from typing import Any, Tuple
 
 # third party modules
@@ -66,18 +67,20 @@ class MFRBFKriging:
             responses and 'lf' contains low-fidelity ones
         """
         # get samples and normalize them
-        self.sample_xh = samples["hf"]
-        self.sample_xl = samples["lf"]
+        self.sample_xh = samples[0]
+        self.sample_xl = samples[1]
         self.sample_xh_scaled = self.normalize_input(self.sample_xh)
         self.sample_xl_scaled = self.normalize_input(self.sample_xl)
 
         # get responses and normalize them
-        self.sample_yh = responses["hf"]
-        self.sample_yl = responses["lf"]
+        self.sample_yh = responses[0]
+        self.sample_yl = responses[1]
         self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
         self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
         # rbf surrogate model would normalize the inputs directly
-        self.lf_model.train(samples["lf"], responses["lf"])
+        time_start = time.time()
+        self.lf_model.train(samples[1], responses[1])
+        time_lf = time.time()
         # prediction of low-fidelity at high-fidelity locations
         self.f = self._basis_function(
             self.sample_xh, poly_order=self.lf_poly_order)
@@ -85,6 +88,9 @@ class MFRBFKriging:
         self._optimize_parameters()
         # update parameters
         self._update_parameters()
+        time_hf = time.time()
+        self.lf_training_time = time_lf - time_start
+        self.hf_training_time = time_hf - time_lf
 
     def predict(self,
                 X: np.ndarray,
