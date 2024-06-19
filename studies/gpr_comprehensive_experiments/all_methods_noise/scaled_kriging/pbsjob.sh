@@ -1,8 +1,8 @@
 #!/bin/bash
 # Torque directives (#PBS) must always be at the start of a job script!
 
-#PBS -N mf_rbf_kriging
-#PBS -q mse
+#PBS -N scaled_kriging
+#PBS -q guest
 #PBS -l nodes=1:ppn=8
 #PBS -o out.$PBS_JOBID
 #PBS -e err.$PBS_JOBID
