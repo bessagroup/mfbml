@@ -27,6 +27,7 @@ class MFDNNBNN:
                  lf_configure: dict,
                  hf_configure: dict,
                  beta_optimize: bool = True,
+                 lf_order: int = 1,
                  beta_bounds: list = [1e-2, 1e1],
                  optimizer_restart: int = 20,
                  discrepancy_normalization: str = "hf") -> None:
@@ -57,10 +58,12 @@ class MFDNNBNN:
 
         # record beta optimize or not
         self.beta_optimize = beta_optimize
+        self.lf_order = lf_order
         self.optimizer_restart = optimizer_restart
-        self.beta = np.array([1.0, 1.0])
-        self.beta_low_bounds = [beta_bounds[0], beta_bounds[0]]
-        self.beta_high_bounds = [beta_bounds[1], beta_bounds[1]]
+        self.beta = np.ones(lf_order+1)
+        # create the beta bounds 
+        self.beta_low_bounds = [beta_bounds[0] for i in range(lf_order+1)]
+        self.beta_high_bounds = [beta_bounds[1] for i in range(lf_order+1)]
         self.beta_bounds = (self.beta_low_bounds, self.beta_high_bounds)
 
         # record the discrepancy normalization method
@@ -358,7 +361,7 @@ class MFDNNBNN:
             x0 = np.random.uniform(
                 self.beta_low_bounds,
                 self.beta_high_bounds,
-                2,
+                size=(self.lf_order+1),
             )
             optRes = minimize(
                 self._eval_error,
@@ -390,9 +393,22 @@ class MFDNNBNN:
         lf_responses = self.predict_lf(self.hf_samples, output_format="numpy")
         beta = np.tile(beta, (hf_responses.shape[0], 1))
         # calculate the error between the high-fidelity and low-fidelity model
-        error = (beta[:, 1] * lf_responses.ravel() -
-                 hf_responses.ravel() - beta[:, 0].ravel())
-        # calculate the sum of the error
+        if self.lf_order == 1:
+            error = (beta[:, 1] * lf_responses.ravel() -
+                     hf_responses.ravel() + beta[:, 0].ravel())
+        elif self.lf_order == 2:
+            error = (beta[:, 2] * lf_responses.ravel()**2 +
+                        beta[:, 1] * lf_responses.ravel() -
+                        hf_responses.ravel() + beta[:, 0].ravel())
+        elif self.lf_order == 3:
+            error = (beta[:, 3] * lf_responses.ravel()**3 +
+                        beta[:, 2] * lf_responses.ravel()**2 +
+                        beta[:, 1] * lf_responses.ravel() -
+                        hf_responses.ravel() + beta[:, 0].ravel())
+        else:
+            raise ValueError("The order of the low-fidelity model is not supported")
+
+        # calculate the summation of the error
         sum_error = np.sum(error**2)
 
         return sum_error
