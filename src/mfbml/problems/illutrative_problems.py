@@ -10,76 +10,64 @@ class mf_Forrester:
     optimum: float = -6.020740
     optimum_scheme: list = [0.757248757841856]
 
-    def hf(self, x: np.ndarray) -> np.ndarray:
+    def hf(self, x: np.ndarray, noise_std: float = 0.0) -> np.ndarray:
 
         # copy the input array
         x = np.copy(x)
         obj = (6 * x - 2) ** 2 * np.sin(12 * x - 4)
         obj = np.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * np.random.randn(*obj.shape)
 
         return obj
 
-    def lf_1(self, x: np.ndarray) -> np.ndarray:
+    def lf_1(self, x: np.ndarray, noise_std: float = 0.0) -> np.ndarray:
         x = np.copy(x)
         obj = self.hf(x) - 5
         obj = np.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * np.random.randn(*obj.shape)
+
         return obj
 
-    def lf_2(self, x: np.ndarray) -> np.ndarray:
+    def lf_2(self, x: np.ndarray, noise_std: float = 0.0) -> np.ndarray:
         x = np.copy(x)
         obj = 0.5*self.hf(x) + 10*(x-0.5) - 5
         obj = np.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * np.random.randn(*obj.shape)
         return obj
 
-    def lf_3(self, x: np.ndarray) -> np.ndarray:
+    def lf_3(self, x: np.ndarray, noise_std: float = 0.0) -> np.ndarray:
         # copy the input array
         x = np.copy(x)
         obj = (5.5 * x - 2.5) ** 2 * np.sin(12 * x - 4)
         obj = np.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * np.random.randn(*obj.shape)
         return obj
 
     def lf_factor(self,
                   x: np.ndarray,
                   beta_0: float = 0.5,
-                  beta_1: float = 5.0) -> np.ndarray:
+                  beta_1: float = 5.0,
+                  noise_std: float = 0.0) -> np.ndarray:
         # copy the input array
         x = np.copy(x)
         obj = beta_1 * self.hf(x) + 10 * (x - 0.5) - beta_0
         obj = np.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * np.random.randn(*obj.shape)
         return obj
 
 
-class Forrester1b:
+class mf_Forrester_torch:
     """Forrester function 1b
     """
 
     def __init__(self, noise_std: float) -> None:
 
         self.noise_std = noise_std
-
-    def __call__(self, samples: dict) -> dict:
-        """evaluate the problem
-
-        Parameters
-        ----------
-        samples : dict
-            samples
-
-        Returns
-        -------
-        dict
-            responses
-        """
-
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
-
-        # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
-
-        return responses
 
     def hf(self, x: torch.Tensor,
            noise_hf: float = None  # type: ignore
@@ -107,29 +95,47 @@ class Forrester1b:
 
         return obj.reshape(-1, 1)
 
-    def lf(self, x: torch.Tensor,
-           noise_lf: float = None  # type: ignore
-           ) -> torch.Tensor:
-        """low fidelity function
+    def lf_1(self,
+             x: torch.Tensor,
+             noise_std: float = 0.0) -> torch.Tensor:
+        x = torch.clone(x)
+        obj = self.hf(x) - 5
+        obj = torch.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * torch.randn(*obj.shape)
 
-        Parameters
-        ----------
-        x : torch.Tensor
-            input tensor
-        noise_lf : float, optional
-            noise standard deviation, by default None
+        return obj
 
-        Returns
-        -------
-        torch.Tensor
-            output tensor
-        """
+    def lf_2(self,
+             x: torch.Tensor,
+             noise_std: float = 0.0) -> torch.Tensor:
+        x = torch.clone(x)
+        obj = 0.5*self.hf(x) + 10*(x-0.5) - 5
+        obj = torch.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * torch.randn(*obj.shape)
+        return obj
 
-        if noise_lf is None:
-            noise_lf = self.noise_std
+    def lf_3(self,
+             x: torch.Tensor,
+             noise_std: float = 0.0) -> torch.Tensor:
+        # copy the input array
+        x = torch.clone(x)
+        obj = (5.5 * x - 2.5) ** 2 * torch.sin(12 * x - 4)
+        obj = torch.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * torch.randn(*obj.shape)
+        return obj
 
-        obj = 0.5 * self.hf(x, noise_hf=0.0) + \
-            10 * (x - 0.5) - 5 + \
-            noise_lf * torch.randn(x.shape)
-
-        return obj.reshape(-1, 1)
+    def lf_factor(self,
+                  x: torch.Tensor,
+                  beta_0: float = 0.5,
+                  beta_1: float = 5.0,
+                  noise_std: float = 0.0) -> torch.Tensor:
+        # copy the input array
+        x = torch.clone(x)
+        obj = beta_1 * self.hf(x) + 10 * (x - 0.5) - beta_0
+        obj = torch.reshape(obj, (x.shape[0], 1))
+        # add noise
+        obj += noise_std * torch.randn(*obj.shape)
+        return obj
