@@ -239,7 +239,7 @@ class MengCase1:
 
         return obj.reshape(-1, 1)
 
-    def lf(self,
+    def lf1(self,
            x: torch.Tensor,
            noise_lf: float = None  # type: ignore
            ) -> torch.Tensor:
@@ -264,6 +264,33 @@ class MengCase1:
             noise_lf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
+    
+    def lf2(self,
+            x: torch.Tensor,
+            noise_lf: float = None  # type: ignore
+            ) -> torch.Tensor:
+        """low fidelity function
+        """
+        if noise_lf is None:
+            noise_lf = self.noise_std
+        obj = 1.2*self.hf(x, noise_hf=0.0) - 0.5 +  \
+            noise_lf * torch.randn(x.shape)
+
+        return obj.reshape(-1, 1)
+    
+    def lf3(self,
+            x: torch.Tensor,
+            noise_lf: float = None  # type: ignore
+            ) -> torch.Tensor:
+        """low fidelity function
+        """
+        if noise_lf is None:
+            noise_lf = self.noise_std
+        
+        obj = torch.sin(16*torch.pi*x)**2 + \
+            noise_lf * torch.randn(x.shape)
+        return obj.reshape(-1, 1)
+    
 
 
 class Rosenbrock:

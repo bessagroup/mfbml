@@ -2,14 +2,12 @@
 # problem problems are originally from the repository:
 # https://github.com/JiaxiangYi96/mfpml.git
 
-from mfpml.problems.multifidelity_functions import (Forrester_1a, Forrester_1b,
-                                                    Forrester_1c,
-                                                    MultiFidelityFunctions,
-                                                    mf_Bohachevsky, mf_Booth,
-                                                    mf_Borehole, mf_CurrinExp,
-                                                    mf_Hartman3, mf_Hartman6,
-                                                    mf_Himmelblau, mf_Park91A,
-                                                    mf_Park91B, mf_Sixhump)
+from mfpml.problems.mf_functions import (Forrester_1a, Forrester_1b,
+                                         Forrester_1c, MultiFidelityFunctions,
+                                         mf_Bohachevsky, mf_Booth, mf_Borehole,
+                                         mf_CurrinExp, mf_Hartman3,
+                                         mf_Hartman6, mf_Himmelblau,
+                                         mf_Park91A, mf_Park91B, mf_Sixhump)
 
 #                                                             register problems
 # =========================================================================== #
