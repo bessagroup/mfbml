@@ -3,7 +3,7 @@
 
 #PBS -N meng_10_runs
 #PBS -q guest
-#PBS -l nodes=1:ppn=24
+#PBS -l nodes=1:ppn=36
 #PBS -o out.$PBS_JOBID
 #PBS -e err.$PBS_JOBID
 
