@@ -6,7 +6,7 @@ import torch
 # get the accuracy metrics
 from sklearn.metrics import r2_score
 
-from mfbml.methods.bnn import BNNWrapper
+from mfbml.methods.bayes_neural_nets import BNNWrapper
 from mfbml.metrics import (mean_log_likelihood_value, normalized_mae,
                            normalized_rmse)
 from mfbml.problems.high_dimension_problems import MengCase1
@@ -52,7 +52,7 @@ hf_responses_scaled = (hf_responses - hf_responses_mean) / hf_responses_std
 
 # create the sf_bnn model
 sigma_scale = float(0.05 / hf_responses_std)
-bnn_model =BNNWrapper(
+bnn_model = BNNWrapper(
     in_features=1,
     hidden_features=[50, 50],
     out_features=1,

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from mfbml.methods.mf_dnn_bnn import MFDNNBNN
+from mfbml.methods.mf_dnn_lr_bnn import MFDNNBNN
 from mfbml.problems.high_dimension_problems import Forrester1b, MengCase1
 
 # define function

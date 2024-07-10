@@ -14,7 +14,7 @@ from mfpml.models.hierarchical_kriging import HierarchicalKriging
 from mfpml.models.scale_kriging import ScaledKriging
 
 # local library
-from mfbml.methods.mf_rbf_gpr import MFRBFGPR
+from mfbml.methods.mf_krr_lr_gpr import MFRBFGPR
 from mfbml.methods.mf_rbf_kriging import MFRBFKriging
 
 

@@ -14,8 +14,8 @@ from f3dasm.datageneration import DataGenerator
 from sklearn.metrics import r2_score
 
 from mfbml.methods.bayes_neural_nets import BNNWrapper
-from mfbml.methods.mf_dnn_lr_bnn import MFDNNBNN
 from mfbml.methods.mf_dnn_bnn import SequentialMFBNN
+from mfbml.methods.mf_dnn_lr_bnn import MFDNNBNN
 from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
                                             normalized_mae, normalized_rmse)
 
@@ -65,7 +65,7 @@ def bnn_single_run(seed: int) -> Dict:
     np.random.seed(seed)
     torch.manual_seed(seed)
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
+    data = pickle.load(open("../data_generation/data_100D_example.pkl", "rb"))
 
     # get the data
     hf_samples = data["hf_samples"]
@@ -75,7 +75,7 @@ def bnn_single_run(seed: int) -> Dict:
     test_responses_noisy = data["test_responses_noisy"]
 
     # design space
-    design_space = torch.tile(torch.Tensor([0, 1]), (hf_samples.shape[1], 1))
+    design_space = torch.tile(torch.Tensor([-3, 3]), (hf_samples.shape[1], 1))
 
     # scale the data
     hf_samples_scaled = normalize_inputs(hf_samples, design_space)
@@ -83,12 +83,12 @@ def bnn_single_run(seed: int) -> Dict:
     hf_responses_scaled = normalize_outputs(hf_responses)
 
     # scale the sigma
-    sigma_scaled = float(0.05 / torch.std(hf_responses))
+    sigma_scaled = float(10.0 / torch.std(hf_responses))
     # define the bnn model
-    bnn_model = BNNWrapper(in_features=4,
-                           hidden_features=[50, 50],
+    bnn_model = BNNWrapper(in_features=100,
+                           hidden_features=[512, 512],
                            out_features=1,
-                           activation="Tanh",
+                           activation="ReLU",
                            lr=0.001,
                            sigma=sigma_scaled)
 
@@ -97,7 +97,7 @@ def bnn_single_run(seed: int) -> Dict:
                     y=hf_responses_scaled,
                     num_epochs=50000,
                     sample_freq=100,
-                    burn_in_epochs=20000,
+                    burn_in_epochs=10000,
                     print_info=True)
 
     # predict the MFDNNBNN object
@@ -139,7 +139,7 @@ def dnnlrbnn_single_run(seed: int) -> dict[str, Any]:
     np.random.seed(seed)
     torch.manual_seed(seed)
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
+    data = pickle.load(open("../data_generation/data_100D_example.pkl", "rb"))
 
     # get the data
     hf_samples = data["hf_samples"]
@@ -152,7 +152,7 @@ def dnnlrbnn_single_run(seed: int) -> dict[str, Any]:
     lf_responses_noisy = data["lf_responses_noisy"]
 
     # design space
-    design_space = torch.tile(torch.Tensor([0, 1]), (hf_samples.shape[1], 1))
+    design_space = torch.tile(torch.Tensor([-3, 3]), (hf_samples.shape[1], 1))
     # create the samples and responses dictionary
     samples = {"lf": lf_samples,
                "hf": hf_samples}
@@ -160,22 +160,22 @@ def dnnlrbnn_single_run(seed: int) -> dict[str, Any]:
                  "hf": hf_responses}
 
     # create the configuration of the low-fidelity model
-    lf_configure = {"in_features": 4,
+    lf_configure = {"in_features": 100,
                     "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
-                    "lr": 0.001,
-                    "weight_decay": 0.000001,
+                    "lr": 0.0001,
+                    "weight_decay": 0.00003,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
-    hf_configure = {"in_features": 4,
-                    "hidden_features": [50, 50],
+    hf_configure = {"in_features": 100,
+                    "hidden_features": [512, 512],
                     "out_features": 1,
-                    "activation": "Tanh",
+                    "activation": "ReLU",
                     "lr": 0.001,
-                    "sigma": 0.05}
+                    "sigma": 10}
 
     # create the MFDNNBNN object
     mfdnnbnn = MFDNNBNN(design_space=design_space,
@@ -186,14 +186,14 @@ def dnnlrbnn_single_run(seed: int) -> dict[str, Any]:
                         beta_bounds=[-5, 5],
                         discrepancy_normalization="hf")
     # lf train config
-    lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 20000,
+    lf_train_config = {"batch_size": 5000,
+                       "num_epochs": 50000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 20000}
+                       "burn_in_epochs": 10000}
 
     # train the MFDNNBNN object
     mfdnnbnn.train(samples=samples,
@@ -241,7 +241,7 @@ def dnn_bnn_single_run(seed: int) -> dict:
     np.random.seed(seed)
     torch.manual_seed(seed)
     # read data from ../data_generation/data.pkl
-    data = pickle.load(open("../data_generation/data_4d_example.pkl", "rb"))
+    data = pickle.load(open("../data_generation/data_100D_example.pkl", "rb"))
     print(data["hf_samples"].shape)
     # get the data
     hf_samples = data["hf_samples"]
@@ -254,7 +254,7 @@ def dnn_bnn_single_run(seed: int) -> dict:
     lf_responses_noisy = data["lf_responses_noisy"]
 
     # design space
-    design_space = torch.tile(torch.Tensor([0, 1]), (hf_samples.shape[1], 1))
+    design_space = torch.tile(torch.Tensor([-3, 3]), (hf_samples.shape[1], 1))
 
     # create the samples and responses dictionary
     samples = {"lf": lf_samples,
@@ -264,22 +264,22 @@ def dnn_bnn_single_run(seed: int) -> dict:
                  "hf": hf_responses}
 
     # create the configuration of the low-fidelity model
-    lf_configure = {"in_features": 4,
+    lf_configure = {"in_features": 100,
                     "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
-                    "lr": 0.001,
-                    "weight_decay": 0.000001,
+                    "lr": 0.0001,
+                    "weight_decay": 0.00003,
                     "loss": "mse"}
 
     # create the configuration of the high-fidelity model
-    hf_configure = {"in_features": 5,
-                    "hidden_features": [50, 50],
+    hf_configure = {"in_features": 101,
+                    "hidden_features": [512, 512],
                     "out_features": 1,
-                    "activation": "Tanh",
+                    "activation": "ReLU",
                     "lr": 0.001,
-                    "sigma": 0.05}
+                    "sigma": 10.0}
 
     # create the sequential mf bnn object
     mfbnn = SequentialMFBNN(design_space=design_space,
@@ -287,14 +287,14 @@ def dnn_bnn_single_run(seed: int) -> dict:
                             hf_configure=hf_configure)
 
     # lf train config
-    lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 20000,
+    lf_train_config = {"batch_size": 10000,
+                       "num_epochs": 50000,
                        "print_iter": 1000,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
                        "sample_freq": 100,
                        "print_info": True,
-                       "burn_in_epochs": 20000}
+                       "burn_in_epochs": 10000}
 
     # train the MFDNNBNN object
     mfbnn.train(samples=samples,
@@ -304,7 +304,7 @@ def dnn_bnn_single_run(seed: int) -> dict:
                 )
 
     # predict the MFDNNBNN object
-    y, epistemic, total_unc, aleatoric = mfbnn.predict(x=test_samples)
+    y, _, total_unc, _ = mfbnn.predict(x=test_samples)
     # lf prediction
     lf_y = mfbnn.predict_lf(x=test_samples, output_format="numpy")
 
@@ -395,7 +395,7 @@ def create_experiment_data() -> None:
     data.add_output_parameter("beta_1")
 
     # save the experiment data
-    data.store(filename='exp_{}'.format('4d_problem'))
+    data.store(filename='exp_{}'.format('100d_problem'))
 
 
 def run_method(method: str,
@@ -476,7 +476,7 @@ def execute_experimentdata() -> None:
 
     # load data from file
     data = f3dasm.ExperimentData.from_file(
-        filename='exp_{}'.format('4d_problem'))
+        filename='exp_{}'.format('100d_problem'))
     # run the function
     data.evaluate(MFBMLExperiments(), mode='cluster')
 

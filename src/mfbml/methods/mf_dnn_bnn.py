@@ -1,83 +1,40 @@
-# ------------------ Beginning of Reference Python Module ---------------------
-"""The proposed multi-fidelity DNN-BNN framework is implemented in this module.
-
-A more elaborate description of this module may be included here.
-
-Classes
--------
-ClassOne
-    A one-line summary of ClassOne contained in this module.
-ClassTwo
-    A one-line summary of ClassTwo contained in this module.
-
-Functions
----------
-function_one
-    A one-line summary of function_one contained in this module.
-function_two
-    A one-line summary of function_two contained in this module.
-"""
-
-#
-#                                                                       Modules
-# =============================================================================
+# this script is used for the mf_dnn_bnn framework
 # standard library
 from typing import Any, Dict, Tuple
 
 # third party modules
 import numpy as np
 import torch
-from scipy.optimize import minimize
 from torch import nn as nn
 
 # local modules
-from mfbml.methods.bnn import BNNWrapper
-from mfbml.methods.dnn import LFDNN
-
-#
-#                                                          Authorship & Credits
-# =============================================================================
-__author__ = 'J.Yi@tudelft.nl'
-__credits__ = ['Jiaxiang Yi']
-__status__ = 'Stable'
-# =============================================================================
+from mfbml.methods.bayes_neural_nets import BNNWrapper
+# import local modules
+from mfbml.methods.deep_neural_nets import LFDNN
 
 
-class MFDNNBNN:
-    """A class for the multi-fidelity DNN-BNN framework, the first step of the
+class SequentialMFBNN:
+    """
+    A class for multi-fidelity Bayesian neural network (BNN) framework, the
     multi-fidelity framework is to create a low-fidelity model the low-fidelity
     model is a DNN the DNN is created using the LFDNN; the second step of the
-    multi-fidelity framework is to create a high-fidelity model using Bayesian
-    neural network (BNN), the BNN is created using the BNNWrapper.
+    multi-fidelity framework is to create a high-fidelity model using Baysian 
+    neural network (BNN), the BNN is created using the BNNWrapper. In this class
+    the two models are trained sequentially.
     """
 
     def __init__(self,
                  design_space: torch.Tensor,
                  lf_configure: Dict,
-                 hf_configure: Dict,
-                 beta_optimize: bool = True,
-                 lf_order: int = 1,
-                 beta_bounds: list = [1e-2, 1e1],
-                 optimizer_restart: int = 20,
-                 discrepancy_normalization: str = "hf") -> None:
+                 hf_configure: Dict,) -> None:
         """initialize the multi-fidelity DNN-BNN framework
 
         Parameters
         ----------
-        design_space: torch.Tensor
-            the design space of the problem(for scaling the input data)
-        lf_configure : dict
-            a dictionary containing the configuration of the low-fidelity
-        hf_configure : dict
-            a dictionary containing the configuration of the high-fidelity
-        beta_optimize : bool, optional
-            whether to optimize the beta or not, by default True
-        beta_bounds : list, optional
-            the bounds of the beta, by default [1e-2, 1e1]
-        optimizer_restart : int, optional
-            the number of restarts for the optimizer, by default 20
-        discrepancy_normalization : str, optional
-            the normalization method for the discrepancy, by default "hf"
+        lf_configure : Dict
+            a dictionary containing the configuration of low-fidelity model
+        hf_configure : Dict
+            a dictionary containing the configuration of high-fidelity model
         """
         # get the design space of this problem
         self.design_space = design_space
@@ -85,25 +42,12 @@ class MFDNNBNN:
         self.lf_configure = lf_configure
         self.hf_configure = hf_configure
 
-        # record beta optimize or not
-        self.beta_optimize = beta_optimize
-        self.lf_order = lf_order
-        self.optimizer_restart = optimizer_restart
-        self.beta = np.ones(lf_order+1)
-        # create the beta bounds
-        self.beta_low_bounds = [beta_bounds[0] for i in range(lf_order+1)]
-        self.beta_high_bounds = [beta_bounds[1] for i in range(lf_order+1)]
-        self.beta_bounds = (self.beta_low_bounds, self.beta_high_bounds)
-
-        # record the discrepancy normalization method
-        self.discrepancy_normalization = discrepancy_normalization
-
         # create the low-fidelity model
         self.define_lf_model()
         # create the high-fidelity model
         self.define_hf_model()
 
-    def define_lf_model(self, lf_model: LFDNN = None) -> None:
+    def define_lf_model(self, lf_model: Any = None) -> None:
         """create the low-fidelity model, it can be defined by using passing a 
         dictionary containing the configuration of the low-fidelity model or
         passing a LFDNN object directly from this function.
@@ -142,31 +86,28 @@ class MFDNNBNN:
             self.hf_model = hf_model
 
     def train(self,
-              samples: dict,
-              responses: dict,
-              lf_train_config: dict = {"batch_size": None,
-                                       "num_epochs": 1000,
-                                       "print_iter": 100,
-                                       "data_split": True,
-                                       },
-              hf_train_config: dict = {"num_epochs": 10000,
+              samples: Dict,
+              responses: Dict,
+              lf_train_config: Dict = {"batch_size": None,
+                                       "num_epochs": 50000,
+                                       "print_iter": 1000,
+                                       "data_split": False},
+              hf_train_config: Dict = {"num_epochs": 10000,
                                        "sample_freq": 100,
                                        "print_info": True,
-                                       "burn_in_epochs": 1000}) -> None:
+                                       "burn_in_epochs": 1000}):
         """train the multi-fidelity DNN-BNN framework
 
         Parameters
         ----------
-        samples : dict
-            a dictionary containing the low-fidelity and high-fidelity samples,
-            original scale is expected, with the key "lf" and "hf"
-        responses : dict
-            a dictionary containing the low-fidelity and high-fidelity
-            responses, original scale is expected, with the key "lf" and "hf"
-        lf_train_config : dict, optional
+        samples : Dict
+            a dictionary containing the low-fidelity and high-fidelity samples
+        responses : Dict
+            a dictionary containing the low-fidelity and high-fidelity responses
+        lf_train_config : Dict, optional
             low fidelity training configuration, by default {"batch_size": None,
             "num_epochs": 1000, "print_iter": 100}
-        hf_train_config : dict, optional
+        hf_train_config : Dict, optional
             high fidelity training configuration, by default {"num_epochs": 10000,
             "sample_freq": 100, "print_info": True, "burn_in_epochs": 1000}
         """
@@ -181,6 +122,14 @@ class MFDNNBNN:
         self.lf_responses_scaled = self.normalize_lf_output(self.lf_responses)
         # get the high-fidelity responses
         self.hf_responses = responses["hf"]
+        self.hf_responses_scaled = self.normalize_hf_output(self.hf_responses)
+        # scale the noise for HF model
+        self.hf_model.sigma = self.hf_model.sigma / self.yh_std.numpy()
+        # receive the low-fidelity training configuration
+        self.lf_training_configure = lf_train_config
+        # receive the high-fidelity training configuration
+        self.hf_training_configure = hf_train_config
+
         # train the low-fidelity model
         self.train_lf_model(x=self.lf_samples_scaled,
                             y=self.lf_responses_scaled,
@@ -188,127 +137,59 @@ class MFDNNBNN:
                             num_epochs=lf_train_config["num_epochs"],
                             print_iter=lf_train_config["print_iter"],
                             data_split=lf_train_config["data_split"])
-        # get the prediction of the low-fidelity model at original scale
+
+        # get the low-fidelity model prediction of the high-fidelity samples
         lf_hf_samples = self.predict_lf(
-            self.hf_samples, output_format="torch")
-        # optimize the beta
-        if self.beta_optimize:
-            self.beta = self._beta_optimize()
+            x=self.hf_samples, output_format="torch")
+        # scale the low-fidelity model prediction
+        lf_hf_samples = (lf_hf_samples - self.yh_mean) / self.yh_std
 
-        print(f"optimized beta: {self.beta}")
+        # concatenate xh and yh
+        xh_ylf = torch.concatenate(
+            (self.hf_samples_scaled, lf_hf_samples), dim=1)
 
-        if self.discrepancy_normalization == "hf":
-            # normalize the hf responses
-            self.hf_responses_scaled = self.normalize_hf_output(
-                self.hf_responses)
-            # scale the noise for HF model
-            self.hf_model.sigma = self.hf_model.sigma / self.yh_std.numpy()
-            # scale it to the hf scale
-            # lf_hf_samples = (lf_hf_samples - self.yh_mean) / self.yh_std
-            # get the difference between the hf and lf samples
-            if self.lf_order == 1:
-                dis_hf_lf_samples = self.hf_responses - \
-                    self.beta[1] * lf_hf_samples - self.beta[0]
-            elif self.lf_order == 2:
-                dis_hf_lf_samples = self.hf_responses - \
-                    self.beta[2] * lf_hf_samples**2 - \
-                    self.beta[1] * lf_hf_samples - self.beta[0]
-            elif self.lf_order == 3:
-                dis_hf_lf_samples = self.hf_responses - \
-                    self.beta[3] * lf_hf_samples**3 - \
-                    self.beta[2] * lf_hf_samples**2 - \
-                    self.beta[1] * lf_hf_samples - self.beta[0]
-            else:
-                raise ValueError(
-                    "The order of the low-fidelity model is not supported")
-            # transfer to torch tensor
-            dis_hf_lf_samples = torch.Tensor(dis_hf_lf_samples)
-            # scale the discrepancy according to hf
-            dis_hf_lf_samples = (dis_hf_lf_samples-self.yh_mean)/self.yh_std
-
-        elif self.discrepancy_normalization == "diff":
-            # get discrepancy between HF and LF samples in the original scale
-            dis_hf_lf_samples = self.hf_responses - \
-                self.beta[1]*lf_hf_samples - self.beta[0]
-            dis_hf_lf_samples = self.normalize_diff_output(
-                dis_hf_lf_samples)
-            dis_hf_lf_samples = torch.Tensor(dis_hf_lf_samples)
-            self.hf_model.sigma = self.hf_model.sigma / self.diff_std.numpy()
-
+        # check the input dimension of the high-fidelity model
+        self._check_hf_input_dimension()
         # train the high-fidelity model
-        self.train_hf_model(x=self.hf_samples_scaled,
-                            y=dis_hf_lf_samples,
+        self.train_hf_model(x=xh_ylf,
+                            y=self.hf_responses_scaled,
                             num_epochs=hf_train_config["num_epochs"],
                             sample_freq=hf_train_config["sample_freq"],
                             print_info=hf_train_config["print_info"],
                             burn_in_epochs=hf_train_config["burn_in_epochs"])
 
     def predict(self, x: torch.Tensor):
-        """predict the high fidelity output of the MF-DNN-BNN framework
+        """predict the high fidelity output of the  Meng's MF-BNN framework
 
         Parameters
         ----------
         x : torch.Tensor
             test input data
 
+        Returns
+        -------
+        _type_
+            _description_
         """
+        # get the low-fidelity model prediction
+        lf_y = self.predict_lf(x, output_format="torch")
+        # scale the low-fidelity model prediction
+        lf_y = (lf_y - self.yh_mean) / self.yh_std
+        # scale the test input data
+        x_scale = self.normalize_inputs(x)
+        # having the xh_ylf
+        xh_ylf = torch.concatenate((x_scale, lf_y), dim=1)
+        # get the high-fidelity model prediction
+        hf_mean, epistemic, total_unc, aleatoric = self.hf_model.predict(
+            xh_ylf)
 
-        if self.discrepancy_normalization == "diff":
-            # get the low-fidelity model prediction
-            lf_y = self.predict_lf(x, output_format="numpy")
-            # scale the input data
-            x_scale = self.normalize_inputs(x)
-            # get the high-fidelity model prediction
-            hy_pred, epistemic, total_unc, aleatoric = self.hf_model.predict(
-                x_scale)
+        # scale back to the original scale
+        hf_mean = hf_mean * self.yh_std.numpy() + self.yh_mean.numpy()
+        epistemic = epistemic * self.yh_std.numpy()
+        total_unc = total_unc * self.yh_std.numpy()
+        aleatoric = aleatoric * self.yh_std.numpy()
 
-            # scale the discrepancy to the original scale
-            hy_pred = hy_pred * self.diff_std.numpy() + self.diff_mean.numpy()
-
-            # get the final prediction y = beta1*lf_y + hy_pred + beta0
-            y = self.beta[1]*lf_y + hy_pred + self.beta[0]
-
-            # uncertainties
-            epistemic = epistemic * self.diff_std.numpy()
-            total_unc = total_unc * self.diff_std.numpy()
-            aleatoric = aleatoric * self.diff_std.numpy()
-
-        elif self.discrepancy_normalization == "hf":
-
-            # get the low-fidelity model prediction
-            lf_y = self.predict_lf(x, output_format="torch")
-            # scale the lf_y to HF scale
-            # lf_y = (lf_y - self.yh_mean) / self.yh_std
-            # scale the input data
-            x_scale = self.normalize_inputs(x)
-            # get the high-fidelity model prediction
-            hy_pred, epistemic, total_unc, aleatoric = self.hf_model.predict(
-                x_scale)
-            # scale the discrepancy to the original scale
-            hy_pred = hy_pred * self.yh_std.numpy() + self.yh_mean.numpy()
-
-            # get the final prediction at the scaled scale
-            if self.lf_order == 1:
-                y = self.beta[1]*lf_y.detach().numpy() + hy_pred + self.beta[0]
-            elif self.lf_order == 2:
-                y = self.beta[2]*lf_y.detach().numpy()**2 + \
-                    self.beta[1]*lf_y.detach().numpy() + hy_pred + self.beta[0]
-            elif self.lf_order == 3:
-                y = self.beta[3]*lf_y.detach().numpy()**3 + \
-                    self.beta[2]*lf_y.detach().numpy()**2 + \
-                    self.beta[1]*lf_y.detach().numpy() + hy_pred + self.beta[0]
-            else:
-                raise ValueError(
-                    "The order of the low-fidelity model is not supported")
-
-            # scale the output data
-            # y = y * self.yh_std.numpy() + self.yh_mean.numpy()
-
-            epistemic = epistemic * self.yh_std.numpy()
-            total_unc = total_unc * self.yh_std.numpy()
-            aleatoric = aleatoric * self.yh_std.numpy()
-
-        return y, epistemic, total_unc, aleatoric
+        return hf_mean, epistemic, total_unc, aleatoric
 
     def predict_lf(self, x: torch.Tensor,
                    output_format: str = "torch") -> torch.Tensor | np.ndarray:
@@ -400,84 +281,16 @@ class MFDNNBNN:
                             print_info=print_info,
                             burn_in_epochs=burn_in_epochs)
 
-    def _beta_optimize(self) -> np.ndarray:
-        """optimize the beta, the beta is the parameter determining how much the
-        low-fidelity model is trusted in the multi-fidelity DNN-BNN framework. 
-        The beta is optimized by minimizing the error between the high-fidelity
-        and low-fidelity model.
-
-        Returns
-        -------
-        np.ndarray
-            the optimized beta
+    def _check_hf_input_dimension(self) -> None:
+        """check the input dimension of the high-fidelity model
         """
-
-        # optimize the beta
-        n_trials = self.optimizer_restart + 1
-        optimum_value = float("inf")
-        for _ in range(n_trials):
-            x0 = np.random.uniform(
-                self.beta_low_bounds,
-                self.beta_high_bounds,
-                size=(self.lf_order+1),
-            )
-            optRes = minimize(
-                self._eval_error,
-                x0=x0,
-                method="L-BFGS-B",
-                bounds=np.array([self.beta_bounds]).T,
-            )
-            if optRes.fun < optimum_value:
-                optimum_value = optRes.fun
-                beta = optRes.x
-
-        return beta
-
-    def _eval_error(self, beta: np.ndarray) -> np.ndarray:
-        """calculate the error between the high-fidelity and low-fidelity model
-
-        Parameters
-        ----------
-        beta : np.ndarray
-            the parameter determining how much the low-fidelity model is trusted
-
-        Returns
-        -------
-        np.ndarray
-            the error between the high-fidelity and low-fidelity model
-        """
-        # get the low-fidelity model prediction of the high-fidelity samples
-        hf_responses = self.hf_responses.clone().detach().numpy()
-        lf_responses = self.predict_lf(self.hf_samples, output_format="numpy")
-        beta = np.tile(beta, (hf_responses.shape[0], 1))
-        # # do the error calculation on the scaled scale
-        # hf_responses = self.normalize_hf_output(torch.Tensor(hf_responses))
-        # lf_responses = self.normalize_lf_output(torch.Tensor(lf_responses))
-        # # to numpy
-        # hf_responses = hf_responses.detach().numpy()
-        # lf_responses = lf_responses.detach().numpy()
-
-        # calculate the error between the high-fidelity and low-fidelity model
-        if self.lf_order == 1:
-            error = (beta[:, 1] * lf_responses.ravel() -
-                     hf_responses.ravel() + beta[:, 0].ravel())
-        elif self.lf_order == 2:
-            error = (beta[:, 2] * lf_responses.ravel()**2 +
-                     beta[:, 1] * lf_responses.ravel() -
-                     hf_responses.ravel() + beta[:, 0].ravel())
-        elif self.lf_order == 3:
-            error = (beta[:, 3] * lf_responses.ravel()**3 +
-                     beta[:, 2] * lf_responses.ravel()**2 +
-                     beta[:, 1] * lf_responses.ravel() -
-                     hf_responses.ravel() + beta[:, 0].ravel())
-        else:
+        # check the input dimension of the high-fidelity model
+        if self.hf_configure["in_features"] != \
+                self.lf_model.out_features + self.lf_model.in_features:
             raise ValueError(
-                "The order of the low-fidelity model is not supported")
-
-        # calculate the summation of the error
-        sum_error = np.sum(error**2)
-
-        return sum_error
+                "the input dimension of the high-fidelity model should equal"
+                "to the sum of the input dimension of the high-fidelity model"
+                "and the output dimension of the low-fidelity model")
 
     def normalize_inputs(self, x: torch.Tensor) -> torch.Tensor:
         """normalize the input data
@@ -513,25 +326,6 @@ class MFDNNBNN:
         self.yl_mean = torch.mean(y)
         self.yl_std = torch.std(y)
         y = (y - self.yl_mean) / self.yl_std
-
-        return y
-
-    def normalize_diff_output(self, y: torch.Tensor) -> torch.Tensor:
-        """normalize the output data of the high-fidelity model
-
-        Parameters
-        ----------
-        y : torch.Tensor
-            output data of the high-fidelity model
-
-        Returns
-        -------
-        torch.Tensor
-            normalized output data of the high-fidelity model
-        """
-        self.diff_mean = torch.mean(y).detach()
-        self.diff_std = torch.std(y).detach()
-        y = (y - self.diff_mean) / self.diff_std
 
         return y
 

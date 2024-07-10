@@ -1,34 +1,25 @@
-#                                                                       Modules
-# =============================================================================
-# standard library
 import time
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
-# third party modules
 import numpy as np
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
 
-# local functions
+# local modules
 from .kernels import RBF
 from .kernel_ridge_regression import RBFKernelRegression
 
-#                                                          Authorship & Credits
-# =============================================================================
-__author__ = 'Jiaxiang Yi'
-__credits__ = ['Jiaxiang Yi']
-__status__ = 'Development'
-# =============================================================================
 
-
-class MFRBFKriging:
+class MFRBFGPR:
     def __init__(
         self,
         design_space: np.ndarray,
         optimizer: Any = None,
         optimizer_restart: int = 0,
         kernel: Any = None,
-        lf_poly_order: str = "linear",
+        noise_prior: float = None,
         seed: int = 42,
     ) -> None:
 
@@ -38,23 +29,24 @@ class MFRBFKriging:
         self.optimizer_restart = optimizer_restart
         self.num_dim = design_space.shape[0]
 
+        # get the noise level
+        self.noise = noise_prior
+
         # define kernel
         if kernel is None:
-            self.kernel = RBF(theta=np.zeros(self.num_dim))
+            self.kernel = RBF(theta=np.ones(self.num_dim))
         else:
             self.kernel = kernel
 
-        # get lf polynomial order
-        self.lf_poly_order = lf_poly_order
         # define the lf model
-        self.lf_model = RBFKernelRegression(
-            design_space=self.bounds,
-            params_optimize=True,
-            optimizer_restart=1,
-            seed=seed,)
+        self.lf_model = RBFKernelRegression(design_space=self.bounds,
+                                            params_optimize=True,
+                                            noise_data=True,
+                                            optimizer_restart=optimizer_restart,
+                                            seed=seed)
 
-    def train(self, samples: dict, responses: dict) -> None:
-        """Train the hierarchical Kriging model
+    def train(self, samples: List, responses: List) -> None:
+        """Train the hierarchical gaussian process model
 
         Parameters
         ----------
@@ -66,6 +58,7 @@ class MFRBFKriging:
             dict with two keys, 'hf' contains high-fidelity
             responses and 'lf' contains low-fidelity ones
         """
+
         # get samples and normalize them
         self.sample_xh = samples[0]
         self.sample_xl = samples[1]
@@ -78,19 +71,18 @@ class MFRBFKriging:
         self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
         self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
         # rbf surrogate model would normalize the inputs directly
-        time_start = time.time()
+        start_time = time.time()
         self.lf_model.train(samples[1], responses[1])
-        time_lf = time.time()
+        lf_train_time = time.time()
         # prediction of low-fidelity at high-fidelity locations
-        self.f = self._basis_function(
-            self.sample_xh, poly_order=self.lf_poly_order)
+        self.f = self._basis_function(self.sample_xh)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
         self._update_parameters()
-        time_hf = time.time()
-        self.lf_training_time = time_lf - time_start
-        self.hf_training_time = time_hf - time_lf
+        end_time = time.time()
+        self.lf_training_time = lf_train_time - start_time
+        self.hf_training_time = end_time - lf_train_time
 
     def predict(self,
                 X: np.ndarray,
@@ -101,74 +93,111 @@ class MFRBFKriging:
         sample_new = np.atleast_2d(sample_new)
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
-        # calculate the normalized predicted mean
-        f = self._basis_function(X, poly_order=self.lf_poly_order)
+        # calculate the predicted mean
+        f = self._basis_function(X)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
-        # scaled the mean back to original scale
-        fmean = fmean * self.yh_std + self.yh_mean
+        fmean = (fmean * self.yh_std + self.yh_mean).reshape(-1, 1)
         # calculate the standard deviation
         if not return_std:
             return fmean.reshape(-1, 1)
         else:
             delta = solve(self.L.T, solve(self.L, knew))
             R = f.T - np.dot(self.f.T, delta)
+            # epistemic uncertainty calculation
             mse = self.sigma2 * \
                 (1 - np.diag(np.dot(knew.T, delta)) +
-                 np.diag(R.T.dot(solve(self.ld.T, solve(self.ld, R))))
+                    np.diag(R.T.dot(solve(self.ld.T, solve(self.ld, R))))
                  )
-
             std = np.sqrt(np.maximum(mse, 0)).reshape(-1, 1)
-            std = std * self.yh_std
+            # epistemic uncertainty scale back
+            self.epistemic = std*self.yh_std
 
-            return fmean, std
+            # total uncertainty
+            total_unc = np.sqrt(self.epistemic**2 + self.noise**2)
+            return fmean, total_unc
 
     def _optimize_parameters(self) -> None:
-        """optimize the hyper-parameters of kernel
-        """
+        if self.noise is None:
+            # noise value needs to be optimized
+            lower_bound_theta = self.kernel._get_low_bound
+            upper_bound_theta = self.kernel._get_high_bound
+            # set up the bounds for noise sigma
+            lower_bound_sigma = 1e-5
+            upper_bound_sigma = 10.0
+            # set up the bounds for the hyper-parameters
+            lower_bound = np.hstack((lower_bound_theta, lower_bound_sigma))
+            upper_bound = np.hstack((upper_bound_theta, upper_bound_sigma))
+            # bounds for the hyper-parameters
+            hyper_bounds = np.vstack((lower_bound, upper_bound)).T
+            # number of hyper-parameters
+            num_hyper = self.kernel._get_num_para + 1
+        else:
+            lower_bound = self.kernel._get_low_bound
+            upper_bound = self.kernel._get_high_bound
+            # bounds for the hyper-parameters
+            hyper_bounds = np.vstack((lower_bound, upper_bound)).T
+            # number of hyper-parameters
+            num_hyper = self.kernel._get_num_para
 
-        n_trials = self.optimizer_restart + 1
-        opt_fs = float("inf")
-        for _ in range(n_trials):
-            x0 = np.random.uniform(
-                self.kernel._get_low_bound,
-                self.kernel._get_high_bound,
-                self.kernel._get_num_para,
-            )
-            optRes = minimize(
+        if self.optimizer is None:
+            n_trials = self.optimizer_restart + 1
+            opt_fs = float("inf")
+            for _ in range(n_trials):
+                x0 = np.random.uniform(
+                    lower_bound,
+                    upper_bound,
+                    num_hyper,
+                )
+                optRes = minimize(
+                    self._logLikelihood,
+                    x0=x0,
+                    method="L-BFGS-B",
+                    bounds=hyper_bounds,
+                )
+                if optRes.fun < opt_fs:
+                    opt_param = optRes.x
+                    opt_fs = optRes.fun
+        else:
+            optRes, _, _ = self.optimizer.run_optimizer(
                 self._logLikelihood,
-                x0=x0,
-                method="L-BFGS-B",
-                bounds=self.kernel._get_bounds_list,
-                options={"maxfun": 200},
+                num_dim=num_hyper,
+                design_space=hyper_bounds,
             )
-            if optRes.fun < opt_fs:
-                opt_param = optRes.x
-                opt_fs = optRes.fun
-        # set parameters
-        self.kernel.set_params(opt_param)
+            opt_param = optRes["best_x"]
+        self.opt_param = opt_param
 
     def _logLikelihood(self, params):
 
         params = np.atleast_2d(params)
+        num_params = params.shape[1]
         nll = np.zeros(params.shape[0])
 
         for i in range(params.shape[0]):
+
             # for optimization every row is a parameter set
-            param = params[i, :]
+            if self.noise is None:
+                param = params[i, 0: num_params - 1]
+                noise_sigma = params[i, -1]
+            else:
+                param = params[i, :]
+                noise_sigma = self.noise / self.yh_std
+
             # calculate the covariance matrix
             K = self.kernel(self.sample_xh_scaled,
                             self.sample_xh_scaled,
-                            param)
+                            param) + noise_sigma**2 * np.eye(self._num_xh)
             L = cholesky(K)
             # Step 1: estimate beta, which is the coefficient of basis function
+            # f, basis function
+            # f = self.predict_lf(self.sample_xh)
             # alpha = K^(-1) * Y
             alpha = solve(L.T, solve(L, self.sample_yh_scaled))
             # K^(-1)f
             KF = solve(L.T, solve(L, self.f))
             # cholesky decomposition for (F^T *K^(-1)* F)
             ld = cholesky(np.dot(self.f.T, KF))
-            # beta = (F^T *K^(-1)* F)^(-1) * F^T *K^(-1) * Y
+            # beta = (F^T *K^(-1)* F)^(-1) * F^T *R^(-1) * Y
             beta = solve(ld.T, solve(ld, np.dot(self.f.T, alpha)))
 
             # step 2: estimate sigma2
@@ -179,8 +208,8 @@ class MFRBFKriging:
                             gamma) / self._num_xh
 
             # step 3: calculate the log likelihood
-            logp = -0.5 * self._num_xh * \
-                np.log(sigma2) - np.sum(np.log(np.diag(L)))
+            logp = -0.5 * self._num_xh * sigma2 - np.sum(np.log(np.diag(L)))
+
             nll[i] = -logp.ravel()
 
         return nll
@@ -188,8 +217,16 @@ class MFRBFKriging:
     def _update_parameters(self) -> None:
         """Update parameters of the model"""
         # update parameters with optimized hyper-parameters
+        if self.noise is None:
+            self.noise = self.opt_param[-1]*self.yh_std
+            self.kernel.set_params(self.opt_param[:-1])
+        else:
+            self.kernel.set_params(self.opt_param)
+        # get the kernel matrix
         self.K = self.kernel.get_kernel_matrix(
-            self.sample_xh_scaled, self.sample_xh_scaled)
+            self.sample_xh_scaled, self.sample_xh_scaled) + \
+            (self.noise/self.yh_std)**2 * np.eye(self._num_xh)
+
         self.L = cholesky(self.K)
 
         # step 1: get the optimal beta
@@ -209,23 +246,44 @@ class MFRBFKriging:
                              self.gamma) / self._num_xh
 
         # step 3: get the optimal log likelihood
-        self.logp = (-0.5 * self._num_xh * np.log(self.sigma2) -
+        self.logp = (-0.5 * self._num_xh * self.sigma2 -
                      np.sum(np.log(np.diag(self.L)))).item()
 
     def predict_lf(self, X: np.ndarray) -> np.ndarray:
+        """Predict the low-fidelity responses
 
+        Parameters
+        ----------
+        X : np.ndarray
+            test samples
+
+        Returns
+        -------
+        np.ndarray
+            predicted responses of low-fidelity
+        """
         return self.lf_model.predict(X)
 
-    def _basis_function(self, x: np.ndarray,
-                        poly_order: str = "linear") -> np.ndarray:
+    def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
+
+        return (inputs - self.bounds[:, 0]) / (
+            self.bounds[:, 1] - self.bounds[:, 0]
+        )
+
+    def normalize_hf_output(self, outputs: np.ndarray) -> np.ndarray:
+
+        self.yh_mean = np.mean(outputs)
+        self.yh_std = np.std(outputs)
+
+        return (outputs - self.yh_mean) / self.yh_std
+
+    def _basis_function(self, x: np.ndarray) -> np.ndarray:
         """Calculate the basis function
 
         Parameters
         ----------
         x : np.ndarray
             sample points
-        poly_order : str, optional
-            order of polynomial, by default "linear"
 
         Returns
         -------
@@ -235,64 +293,10 @@ class MFRBFKriging:
         # get the prediction of low-fidelity at high-fidelity locations
         f = self.predict_lf(x)
         f = (f-self.yh_mean)/self.yh_std
-
-        if poly_order == "ordinary":
-            # ordinary polynomial (it retrieves back to single fidelity)
-            f = np.ones((f.shape[0], 1))
-        elif poly_order == "linear_without_const":
-            # assemble the basis function without the first column
-            f = f
-        elif poly_order == "linear":
-            # assemble the basis function by having the first column as 1
-            f = np.hstack((np.ones((f.shape[0], 1)), f))
-        elif poly_order == "quadratic":
-            # assemble the basis function with the first column as 1
-            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2))
-        elif poly_order == "cubic":
-            # assemble the basis function with the first column as 1
-            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2, f**3))
-
-        else:
-            raise ValueError("Invalid polynomial order")
+        # assemble the basis function by having the first column as 1
+        f = np.hstack((np.ones((f.shape[0], 1)), f))
 
         return f
-
-    def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
-        """Normalize the input into [0, 1] according to the bounds
-
-        Parameters
-        ----------
-        inputs : np.ndarray
-            sample points
-
-        Returns
-        -------
-        np.ndarray
-            normalized sample points
-        """
-
-        return (inputs - self.bounds[:, 0]) / (
-            self.bounds[:, 1] - self.bounds[:, 0]
-        )
-
-    def normalize_hf_output(self, outputs: np.ndarray) -> np.ndarray:
-        """Normalize the output into normal distribution
-
-        Parameters
-        ----------
-        outputs : np.ndarray
-            responses of high-fidelity
-
-        Returns
-        -------
-        np.ndarray
-            normalized responses
-        """
-        # calculate the mean and std of hf responses
-        self.yh_mean = np.mean(outputs)
-        self.yh_std = np.std(outputs)
-
-        return (outputs - self.yh_mean) / self.yh_std
 
     @property
     def _get_lf_model(self) -> Any:
