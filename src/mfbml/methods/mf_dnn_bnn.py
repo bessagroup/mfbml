@@ -61,7 +61,7 @@ class MFDNNBNN:
         self.lf_order = lf_order
         self.optimizer_restart = optimizer_restart
         self.beta = np.ones(lf_order+1)
-        # create the beta bounds 
+        # create the beta bounds
         self.beta_low_bounds = [beta_bounds[0] for i in range(lf_order+1)]
         self.beta_high_bounds = [beta_bounds[1] for i in range(lf_order+1)]
         self.beta_bounds = (self.beta_low_bounds, self.beta_high_bounds)
@@ -175,12 +175,27 @@ class MFDNNBNN:
             # scale the noise for HF model
             self.hf_model.sigma = self.hf_model.sigma / self.yh_std.numpy()
             # scale it to the hf scale
-            lf_hf_samples = (lf_hf_samples - self.yh_mean) / self.yh_std
+            # lf_hf_samples = (lf_hf_samples - self.yh_mean) / self.yh_std
             # get the difference between the hf and lf samples
-            dis_hf_lf_samples = self.hf_responses_scaled - \
-                self.beta[1] * lf_hf_samples - self.beta[0]
+            if self.lf_order == 1:
+                dis_hf_lf_samples = self.hf_responses - \
+                    self.beta[1] * lf_hf_samples - self.beta[0]
+            elif self.lf_order == 2:
+                dis_hf_lf_samples = self.hf_responses - \
+                    self.beta[2] * lf_hf_samples**2 - \
+                    self.beta[1] * lf_hf_samples - self.beta[0]
+            elif self.lf_order == 3:
+                dis_hf_lf_samples = self.hf_responses - \
+                    self.beta[3] * lf_hf_samples**3 - \
+                    self.beta[2] * lf_hf_samples**2 - \
+                    self.beta[1] * lf_hf_samples - self.beta[0]
+            else:
+                raise ValueError(
+                    "The order of the low-fidelity model is not supported")
             # transfer to torch tensor
             dis_hf_lf_samples = torch.Tensor(dis_hf_lf_samples)
+            # scale the discrepancy according to hf
+            dis_hf_lf_samples = (dis_hf_lf_samples-self.yh_mean)/self.yh_std
 
         elif self.discrepancy_normalization == "diff":
             # get discrepancy between HF and LF samples in the original scale
@@ -234,17 +249,31 @@ class MFDNNBNN:
             # get the low-fidelity model prediction
             lf_y = self.predict_lf(x, output_format="torch")
             # scale the lf_y to HF scale
-            lf_y = (lf_y - self.yh_mean) / self.yh_std
+            # lf_y = (lf_y - self.yh_mean) / self.yh_std
             # scale the input data
             x_scale = self.normalize_inputs(x)
             # get the high-fidelity model prediction
             hy_pred, epistemic, total_unc, aleatoric = self.hf_model.predict(
                 x_scale)
+            # scale the discrepancy to the original scale
+            hy_pred = hy_pred * self.yh_std.numpy() + self.yh_mean.numpy()
+
             # get the final prediction at the scaled scale
-            y = self.beta[1]*lf_y.detach().numpy() + hy_pred + self.beta[0]
+            if self.lf_order == 1:
+                y = self.beta[1]*lf_y.detach().numpy() + hy_pred + self.beta[0]
+            elif self.lf_order == 2:
+                y = self.beta[2]*lf_y.detach().numpy()**2 + \
+                    self.beta[1]*lf_y.detach().numpy() + hy_pred + self.beta[0]
+            elif self.lf_order == 3:
+                y = self.beta[3]*lf_y.detach().numpy()**3 + \
+                    self.beta[2]*lf_y.detach().numpy()**2 + \
+                    self.beta[1]*lf_y.detach().numpy() + hy_pred + self.beta[0]
+            else:
+                raise ValueError(
+                    "The order of the low-fidelity model is not supported")
 
             # scale the output data
-            y = y * self.yh_std.numpy() + self.yh_mean.numpy()
+            # y = y * self.yh_std.numpy() + self.yh_mean.numpy()
 
             epistemic = epistemic * self.yh_std.numpy()
             total_unc = total_unc * self.yh_std.numpy()
@@ -392,21 +421,29 @@ class MFDNNBNN:
         hf_responses = self.hf_responses.clone().detach().numpy()
         lf_responses = self.predict_lf(self.hf_samples, output_format="numpy")
         beta = np.tile(beta, (hf_responses.shape[0], 1))
+        # # do the error calculation on the scaled scale
+        # hf_responses = self.normalize_hf_output(torch.Tensor(hf_responses))
+        # lf_responses = self.normalize_lf_output(torch.Tensor(lf_responses))
+        # # to numpy
+        # hf_responses = hf_responses.detach().numpy()
+        # lf_responses = lf_responses.detach().numpy()
+
         # calculate the error between the high-fidelity and low-fidelity model
         if self.lf_order == 1:
             error = (beta[:, 1] * lf_responses.ravel() -
                      hf_responses.ravel() + beta[:, 0].ravel())
         elif self.lf_order == 2:
             error = (beta[:, 2] * lf_responses.ravel()**2 +
-                        beta[:, 1] * lf_responses.ravel() -
-                        hf_responses.ravel() + beta[:, 0].ravel())
+                     beta[:, 1] * lf_responses.ravel() -
+                     hf_responses.ravel() + beta[:, 0].ravel())
         elif self.lf_order == 3:
             error = (beta[:, 3] * lf_responses.ravel()**3 +
-                        beta[:, 2] * lf_responses.ravel()**2 +
-                        beta[:, 1] * lf_responses.ravel() -
-                        hf_responses.ravel() + beta[:, 0].ravel())
+                     beta[:, 2] * lf_responses.ravel()**2 +
+                     beta[:, 1] * lf_responses.ravel() -
+                     hf_responses.ravel() + beta[:, 0].ravel())
         else:
-            raise ValueError("The order of the low-fidelity model is not supported")
+            raise ValueError(
+                "The order of the low-fidelity model is not supported")
 
         # calculate the summation of the error
         sum_error = np.sum(error**2)

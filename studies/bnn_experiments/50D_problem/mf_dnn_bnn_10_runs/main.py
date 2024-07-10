@@ -42,7 +42,7 @@ def single_run(iter: int) -> dict[str, Any]:
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 50,
-                    "hidden_features": [512, 512, 512],
+                    "hidden_features": [512, 512],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
@@ -115,7 +115,7 @@ def single_run(iter: int) -> dict[str, Any]:
                "lf_nrmse": lf_nrmse,
                "lf_r2": lf_r2,
                "beta_0": mfdnnbnn.beta[0],
-               "beta_1": mfdnnbnn.beta[1],}
+               "beta_1": mfdnnbnn.beta[1], }
 
     # save the results to csv file
     df = pd.DataFrame(results, index=[0])

@@ -39,7 +39,7 @@ def single_run(iter: int) -> dict:
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 50,
-                    "hidden_features": [512, 512,512],
+                    "hidden_features": [512, 512],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
