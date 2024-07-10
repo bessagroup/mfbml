@@ -15,7 +15,7 @@ import pandas as pd
 from f3dasm import (CategoricalParameter, DiscreteParameter, Domain,
                     ExperimentData, ExperimentSample)
 from f3dasm.datageneration import DataGenerator
-from mfpml.design_of_experiment.multifidelity_samplers import MFLatinHyperCube
+from mfpml.design_of_experiment.mf_samplers import MFLatinHyperCube
 from sklearn.metrics import r2_score
 
 from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
@@ -54,7 +54,7 @@ def create_experiment_data() -> None:
     seed_sets = [1, 2, 3, 4, 5]
 
     # define the number of lf and hf samples
-    num_lf_sample = [50,100,150,200,250,300]
+    num_lf_sample = [50, 100, 150, 200, 250, 300]
     num_hf_sample = [20]
 
     # # define noise level for high fidelity
@@ -68,7 +68,7 @@ def create_experiment_data() -> None:
                 for num_hf in num_hf_sample:
                     for noise_std in noise_levels:
                         design_variables.append(
-                            [ problem, seed, num_lf, num_hf, noise_std])
+                            [problem, seed, num_lf, num_hf, noise_std])
 
     # save design variables tp pandas data-frame
     design_variables = pd.DataFrame(design_variables,
@@ -150,7 +150,6 @@ def create_experiment_data() -> None:
     data.add_output_parameter('sk_inference_time')
     data.add_output_parameter("sk_learned_noise_std")
 
-
     # save the experiment data
     data.store(filename='exp_{}'.format('noise_doe_experiments'))
 
@@ -212,8 +211,8 @@ def run_method(
     mkg_nrmse = normalized_rmse(test_y, mkg_pred_y)
     mkg_r2 = r2_score(test_y, mkg_pred_y)
     mkg_mll = mean_log_likelihood_value(y_true=test_y_noise,
-                                                    y_pred_mean=mkg_pred_y,
-                                                    y_pred_std=mkg_pred_std)
+                                        y_pred_mean=mkg_pred_y,
+                                        y_pred_std=mkg_pred_std)
     # get noise estimation
     mkg_noise_std = mkg_model.noise
     # training time for low fidelity
@@ -223,7 +222,7 @@ def run_method(
 
     # cokring model  ==========================================================
     ck_model = get_methods_for_noise_data(model_name="cokriging",
-                                           design_space=func._input_domain)
+                                          design_space=func._input_domain)
     ck_model.train(samples=sample_x,
                    responses=sample_y)
     start_time = time.time()
@@ -235,8 +234,8 @@ def run_method(
     ck_nrmse = normalized_rmse(test_y, ck_pred_y)
     ck_r2 = r2_score(test_y, ck_pred_y)
     ck_mll = mean_log_likelihood_value(y_true=test_y_noise,
-                                        y_pred_mean=ck_pred_y,
-                                        y_pred_std=ck_pred_std)
+                                       y_pred_mean=ck_pred_y,
+                                       y_pred_std=ck_pred_std)
     # get noise estimation
     ck_noise_std = ck_model.noise
     # training time for low fidelity
@@ -258,15 +257,14 @@ def run_method(
     hk_nrmse = normalized_rmse(test_y, hk_pred_y)
     hk_r2 = r2_score(test_y, hk_pred_y)
     hk_mll = mean_log_likelihood_value(y_true=test_y_noise,
-                                        y_pred_mean=hk_pred_y,
-                                        y_pred_std=hk_pred_std)
+                                       y_pred_mean=hk_pred_y,
+                                       y_pred_std=hk_pred_std)
     # get noise estimation
     hk_noise_std = hk_model.noise
     # training time for low fidelity
     hk_lf_training_time = hk_model.lf_training_time
     # training time for high fidelity
     hk_hf_training_time = hk_model.hf_training_time
-
 
     # for scale kriging =======================================================
     sk_model = get_methods_for_noise_data(model_name="scaled_kriging",
@@ -282,8 +280,8 @@ def run_method(
     sk_nrmse = normalized_rmse(test_y, sk_pred_y)
     sk_r2 = r2_score(test_y, sk_pred_y)
     sk_mll = mean_log_likelihood_value(y_true=test_y_noise,
-                                        y_pred_mean=sk_pred_y,
-                                        y_pred_std=sk_pred_std)
+                                       y_pred_mean=sk_pred_y,
+                                       y_pred_std=sk_pred_std)
     # get noise estimation
     sk_noise_std = sk_model.noise
     # training time for low fidelity
@@ -291,43 +289,41 @@ def run_method(
     # training time for high fidelity
     sk_hf_training_time = sk_model.hf_training_time
 
-    # record the results 
-    results ={'mkg_normalized_mae': mkg_nmae,
-            'mkg_normalized_rmse': mkg_nrmse,
-            'mkg_r2': mkg_r2,
-            'mkg_lf_training_time': mkg_lf_training_time,
-            'mkg_hf_training_time': mkg_hf_training_time,
-            'mkg_inference_time': mkg_inference_time,
-            "mkg_mean_log_likelihood": mkg_mll,
-            "mkg_learned_noise_std": mkg_noise_std,
-            'ck_normalized_mae': ck_nmae,
-            'ck_normalized_rmse': ck_nrmse,
-            'ck_r2': ck_r2,
-            'ck_lf_training_time': ck_lf_training_time,
-            'ck_hf_training_time': ck_hf_training_time,
-            'ck_inference_time': ck_inference_time,
-            "ck_mean_log_likelihood": ck_mll,
-            "ck_learned_noise_std": ck_noise_std,
-            'hk_normalized_mae': hk_nmae,
-            'hk_normalized_rmse': hk_nrmse,
-            'hk_r2': hk_r2,
-            'hk_lf_training_time': hk_lf_training_time,
-            'hk_hf_training_time': hk_hf_training_time,
-            'hk_inference_time': hk_inference_time,
-            "hk_mean_log_likelihood": hk_mll,
-            "hk_learned_noise_std": hk_noise_std,
-            'sk_normalized_mae': sk_nmae,
-            'sk_normalized_rmse': sk_nrmse,
-            'sk_r2': sk_r2,
-            'sk_lf_training_time': sk_lf_training_time,
-            'sk_hf_training_time': sk_hf_training_time,
-            'sk_inference_time': sk_inference_time,
-            "sk_mean_log_likelihood": sk_mll,
-            "sk_learned_noise_std": sk_noise_std}
+    # record the results
+    results = {'mkg_normalized_mae': mkg_nmae,
+               'mkg_normalized_rmse': mkg_nrmse,
+               'mkg_r2': mkg_r2,
+               'mkg_lf_training_time': mkg_lf_training_time,
+               'mkg_hf_training_time': mkg_hf_training_time,
+               'mkg_inference_time': mkg_inference_time,
+               "mkg_mean_log_likelihood": mkg_mll,
+               "mkg_learned_noise_std": mkg_noise_std,
+               'ck_normalized_mae': ck_nmae,
+               'ck_normalized_rmse': ck_nrmse,
+               'ck_r2': ck_r2,
+               'ck_lf_training_time': ck_lf_training_time,
+               'ck_hf_training_time': ck_hf_training_time,
+               'ck_inference_time': ck_inference_time,
+               "ck_mean_log_likelihood": ck_mll,
+               "ck_learned_noise_std": ck_noise_std,
+               'hk_normalized_mae': hk_nmae,
+               'hk_normalized_rmse': hk_nrmse,
+               'hk_r2': hk_r2,
+               'hk_lf_training_time': hk_lf_training_time,
+               'hk_hf_training_time': hk_hf_training_time,
+               'hk_inference_time': hk_inference_time,
+               "hk_mean_log_likelihood": hk_mll,
+               "hk_learned_noise_std": hk_noise_std,
+               'sk_normalized_mae': sk_nmae,
+               'sk_normalized_rmse': sk_nrmse,
+               'sk_r2': sk_r2,
+               'sk_lf_training_time': sk_lf_training_time,
+               'sk_hf_training_time': sk_hf_training_time,
+               'sk_inference_time': sk_inference_time,
+               "sk_mean_log_likelihood": sk_mll,
+               "sk_learned_noise_std": sk_noise_std}
 
     return results
-    
-
 
 
 class MFBMLExperiments(DataGenerator):
@@ -416,10 +412,6 @@ class MFBMLExperiments(DataGenerator):
         print("sk_lf_training_time: ", results['sk_lf_training_time'])
         print("sk_hf_training_time: ", results['sk_hf_training_time'])
 
-
-        
-
-
         print("=====================================")
         # update the output data
         sample.output_data['mkg_normalized_mae'] = results['mkg_normalized_mae']
@@ -458,7 +450,6 @@ class MFBMLExperiments(DataGenerator):
         sample.output_data['sk_lf_training_time'] = results['sk_lf_training_time']
         sample.output_data['sk_hf_training_time'] = results['sk_hf_training_time']
 
-    
         return data
 
 
@@ -487,6 +478,7 @@ def main() -> None:
         except:
             sleep(20*f3dasm.HPC_JOBID)
             execute_experimentdata()
+
 
 if __name__ == '__main__':
     main()

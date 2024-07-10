@@ -1,6 +1,28 @@
-# this script is used for the mf_dnn_bnn framework
+# ------------------ Beginning of Reference Python Module ---------------------
+"""The proposed multi-fidelity DNN-BNN framework is implemented in this module.
+
+A more elaborate description of this module may be included here.
+
+Classes
+-------
+ClassOne
+    A one-line summary of ClassOne contained in this module.
+ClassTwo
+    A one-line summary of ClassTwo contained in this module.
+
+Functions
+---------
+function_one
+    A one-line summary of function_one contained in this module.
+function_two
+    A one-line summary of function_two contained in this module.
+"""
+
+#
+#                                                                       Modules
+# =============================================================================
 # standard library
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 
 # third party modules
 import numpy as np
@@ -10,8 +32,15 @@ from torch import nn as nn
 
 # local modules
 from mfbml.methods.bnn import BNNWrapper
-# import local modules
 from mfbml.methods.dnn import LFDNN
+
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
 class MFDNNBNN:
@@ -24,8 +53,8 @@ class MFDNNBNN:
 
     def __init__(self,
                  design_space: torch.Tensor,
-                 lf_configure: dict,
-                 hf_configure: dict,
+                 lf_configure: Dict,
+                 hf_configure: Dict,
                  beta_optimize: bool = True,
                  lf_order: int = 1,
                  beta_bounds: list = [1e-2, 1e1],
@@ -74,7 +103,7 @@ class MFDNNBNN:
         # create the high-fidelity model
         self.define_hf_model()
 
-    def define_lf_model(self, lf_model: Any = None) -> None:
+    def define_lf_model(self, lf_model: LFDNN = None) -> None:
         """create the low-fidelity model, it can be defined by using passing a 
         dictionary containing the configuration of the low-fidelity model or
         passing a LFDNN object directly from this function.
@@ -282,7 +311,7 @@ class MFDNNBNN:
         return y, epistemic, total_unc, aleatoric
 
     def predict_lf(self, x: torch.Tensor,
-                   output_format: str = "torch") -> torch.Tensor | Any:
+                   output_format: str = "torch") -> torch.Tensor | np.ndarray:
         """predict the low fidelity output of the MF-DNN-BNN framework
 
         Parameters

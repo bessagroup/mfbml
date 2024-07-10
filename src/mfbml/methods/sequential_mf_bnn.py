@@ -1,6 +1,6 @@
 # this script is used for the mf_dnn_bnn framework
 # standard library
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 
 # third party modules
 import numpy as np
@@ -25,15 +25,15 @@ class SequentialMFBNN:
 
     def __init__(self,
                  design_space: torch.Tensor,
-                 lf_configure: dict,
-                 hf_configure: dict,) -> None:
+                 lf_configure: Dict,
+                 hf_configure: Dict,) -> None:
         """initialize the multi-fidelity DNN-BNN framework
 
         Parameters
         ----------
-        lf_configure : dict
+        lf_configure : Dict
             a dictionary containing the configuration of low-fidelity model
-        hf_configure : dict
+        hf_configure : Dict
             a dictionary containing the configuration of high-fidelity model
         """
         # get the design space of this problem
@@ -86,13 +86,13 @@ class SequentialMFBNN:
             self.hf_model = hf_model
 
     def train(self,
-              samples: dict,
-              responses: dict,
-              lf_train_config: dict = {"batch_size": None,
+              samples: Dict,
+              responses: Dict,
+              lf_train_config: Dict = {"batch_size": None,
                                        "num_epochs": 50000,
                                        "print_iter": 1000,
                                        "data_split": False},
-              hf_train_config: dict = {"num_epochs": 10000,
+              hf_train_config: Dict = {"num_epochs": 10000,
                                        "sample_freq": 100,
                                        "print_info": True,
                                        "burn_in_epochs": 1000}):
@@ -100,14 +100,14 @@ class SequentialMFBNN:
 
         Parameters
         ----------
-        samples : dict
+        samples : Dict
             a dictionary containing the low-fidelity and high-fidelity samples
-        responses : dict
+        responses : Dict
             a dictionary containing the low-fidelity and high-fidelity responses
-        lf_train_config : dict, optional
+        lf_train_config : Dict, optional
             low fidelity training configuration, by default {"batch_size": None,
             "num_epochs": 1000, "print_iter": 100}
-        hf_train_config : dict, optional
+        hf_train_config : Dict, optional
             high fidelity training configuration, by default {"num_epochs": 10000,
             "sample_freq": 100, "print_info": True, "burn_in_epochs": 1000}
         """
