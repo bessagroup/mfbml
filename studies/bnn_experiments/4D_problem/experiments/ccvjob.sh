@@ -2,7 +2,7 @@
 #SBATCH --job-name=meng_dnnbnn
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64
+#SBATCH --cpus-per-task=16
 #SBATCH --time=400:00:00
 #SBATCH -p batch
 #SBATCH --account=mbessa-condo 
