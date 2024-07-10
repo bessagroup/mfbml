@@ -39,7 +39,7 @@ def single_run(iter: int) -> dict:
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 100,
-                    "hidden_features": [512, 512,512],
+                    "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
@@ -61,8 +61,8 @@ def single_run(iter: int) -> dict:
                             hf_configure=hf_configure)
 
     # lf train config
-    lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 80000,
+    lf_train_config = {"batch_size": 5000,
+                       "num_epochs": 50000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
