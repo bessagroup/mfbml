@@ -161,7 +161,7 @@ def dnnlrbnn_single_run(seed: int) -> dict[str, Any]:
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 50,
-                    "hidden_features": [512, 512],
+                    "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",
@@ -183,7 +183,7 @@ def dnnlrbnn_single_run(seed: int) -> dict[str, Any]:
                         hf_configure=hf_configure,
                         beta_optimize=True,
                         lf_order=1,
-                        beta_bounds=[-5, 5],
+                        beta_bounds=[-100, 100],
                         discrepancy_normalization="hf")
     # lf train config
     lf_train_config = {"batch_size": 1000,
@@ -265,7 +265,7 @@ def dnn_bnn_single_run(seed: int) -> dict:
 
     # create the configuration of the low-fidelity model
     lf_configure = {"in_features": 50,
-                    "hidden_features": [512, 512],
+                    "hidden_features": [256, 256],
                     "out_features": 1,
                     "activation": "Tanh",
                     "optimizer": "Adam",

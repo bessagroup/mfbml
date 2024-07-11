@@ -29,8 +29,8 @@ def get_samples(num_dim: int) -> np.ndarray:
     noise_std = 10.0
 
     # define samples information
-    num_hf = 500*num_dim
-    num_lf = 5000*num_dim
+    num_hf = 100*num_dim
+    num_lf = 1000*num_dim
     num_test = 2000*num_dim
 
     # initialize the problem
