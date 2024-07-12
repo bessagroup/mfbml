@@ -183,11 +183,11 @@ def dnnlrbnn_single_run(seed: int) -> dict[str, Any]:
                         hf_configure=hf_configure,
                         beta_optimize=True,
                         lf_order=1,
-                        beta_bounds=[-5, 5],
-                        discrepancy_normalization="hf")
+                        beta_bounds=[-100, 100],
+                        discrepancy_normalization="diff")
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 80000,
+                       "num_epochs": 50000,
                        "print_iter": 100,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
@@ -288,7 +288,7 @@ def dnn_bnn_single_run(seed: int) -> dict:
 
     # lf train config
     lf_train_config = {"batch_size": 1000,
-                       "num_epochs": 80000,
+                       "num_epochs": 50000,
                        "print_iter": 1000,
                        "data_split": True}
     hf_train_config = {"num_epochs": 50000,
@@ -352,7 +352,7 @@ def create_experiment_data() -> None:
     method_sets = ['bnn',
                    'dnn_bnn',
                    'dnn_lr_bnn',
-                   '']
+                   ]
 
     # define seed sets
     seed_sets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
