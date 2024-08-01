@@ -1,5 +1,22 @@
-# this script is used for the mf_dnn_bnn framework
-# standard library
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for Single-fidelity Bayesian Neural Networks
+
+This module contains the classes and functions for training single-fidelity
+Bayesian Neural Networks (BNNs) using PyTorch.
+
+Classes
+-------
+LinearNet
+    A class for defining a linear neural network architecture.
+BNNWrapper
+    A wrapper class for training a Bayesian Neural Network (BNN) using PyTorch.
+
+"""
+
+#
+#                                                                       Modules
+# =============================================================================
+# standard library modules
 from typing import Any, Dict, Tuple
 
 # third party modules
@@ -9,11 +26,10 @@ from torch import nn as nn
 
 # local modules
 from mfbml.methods.bayes_neural_nets import BNNWrapper
-# import local modules
 from mfbml.methods.deep_neural_nets import LFDNN
 
 
-class SequentialMFBNN:
+class DNNBNN:
     """
     A class for multi-fidelity Bayesian neural network (BNN) framework, the
     multi-fidelity framework is to create a low-fidelity model the low-fidelity
@@ -95,7 +111,7 @@ class SequentialMFBNN:
               hf_train_config: Dict = {"num_epochs": 10000,
                                        "sample_freq": 100,
                                        "print_info": True,
-                                       "burn_in_epochs": 1000}):
+                                       "burn_in_epochs": 1000}) -> None:
         """train the multi-fidelity DNN-BNN framework
 
         Parameters
@@ -274,8 +290,8 @@ class SequentialMFBNN:
         burn_in_epochs : int, optional
             burn in epochs, by default 1000
         """
-        self.hf_model.train(x=x,
-                            y=y,
+        self.hf_model.train(X=x,
+                            Y=y,
                             num_epochs=num_epochs,
                             sample_freq=sample_freq,
                             print_info=print_info,

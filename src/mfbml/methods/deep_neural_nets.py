@@ -1,12 +1,37 @@
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for  deep neural networks used in multi-fidelity Bayesian neural 
+networks as the low fidelity model.
 
-# this script is used for the mf_dnn_bnn framework
+This module contains the classes for multi-layer perceptron (MLP) and low
+fidelity deep neural network (LFDNN).
+
+Classes
+-------
+MLP
+    A class for defining the multi-layer perceptron.
+LFDNN
+    A class for training low fidelity deep neural network.
+
+
+"""
+#                                                                       Modules
+# =============================================================================
+# standard library modules
 from typing import Any
 
+# third party modules
 import torch
 from sklearn.model_selection import train_test_split
 from torch import nn as nn
 from torch.utils.data import DataLoader
 
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 class MLP(nn.Module):
     def __init__(
@@ -122,6 +147,7 @@ class LFDNN(MLP):
                  optimizer: str = "Adam",
                  lr: float = 0.001,
                  weight_decay: float = 0.01,
+                 seed: int = 42,
                  loss: str = "mse") -> None:
         """initialization of low fidelity deep neural network
 
@@ -158,20 +184,24 @@ class LFDNN(MLP):
 
         # get the loss function
         self.loss = self._get_loss(loss_name=loss)
+        # seed 
+        self.seed = seed
 
-    def train(self, x: torch.Tensor,
-              y: torch.Tensor,
-              batch_size: int | bool = None,  # type: ignore
+    def train(self, 
+              X: torch.Tensor,
+              Y: torch.Tensor,
+              batch_size: int | bool = None, 
               num_epoch: int = 1000,
               print_iter: int = 100,
+              test_portion: float = 0.2,
               data_split: bool = False) -> None:
         """train the model
 
         Parameters
         ----------
-        x : torch.Tensor
+        X : torch.Tensor
             input data
-        y : torch.Tensor
+        Y : torch.Tensor
             output data
         batch_size : int, optional
             batch size, by default None
@@ -189,10 +219,10 @@ class LFDNN(MLP):
         self.data_split = data_split
         if self.data_split:
             X_train, X_test, y_train, y_test = train_test_split(
-                x, y, test_size=0.2, random_state=42)
+                X, Y, test_size=test_portion, random_state=self.seed)
         else:
-            X_train = x
-            y_train = y
+            X_train = X
+            y_train = Y
             print("No data split: use all data for training")
 
         # if batch size is not given, use all data for training

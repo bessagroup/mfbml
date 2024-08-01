@@ -18,20 +18,27 @@ BNNWrapper
 # =============================================================================
 # standard library
 import copy
-from typing import Any, Dict, Tuple
+from typing import Any, Tuple
 
 # third party modules
 import numpy as np
 import torch
 import torch.nn as nn
-from torch import nn as nn
 from torch.optim.lr_scheduler import ExponentialLR
 
-from mfbml.inference import pSGLD
+# local library
+from mfbml.inference import SGHMC, SGLD, pSGLD
 
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 class LinearNet(nn.Module):
-    """ Linear neural network class
+    """ Linear neural network class with prior distribution on weights
 
     Parameters
     ----------
@@ -46,6 +53,25 @@ class LinearNet(nn.Module):
                  activation: str = "Tanh",
                  prior_mu: float = 0.0,
                  prior_sigma: float = 1.0) -> None:
+        """initialize the linear neural network
+
+        Parameters
+        ----------
+        in_features : int, optional
+            number of input features, by default 1
+        out_features : int, optional
+            number of output features, by default 1
+        hidden_features : list, optional
+            hidden layer features, by default [20, 20, 20]
+        activation : str, optional
+            activation function, by default "Tanh"
+        prior_mu : float, optional
+            prior mean, by default 0.0
+        prior_sigma : float, optional
+            prior sigma, by default 1.0
+        
+
+        """ 
         super().__init__()
 
         # define prior distribution for weight and bias
@@ -62,10 +88,26 @@ class LinearNet(nn.Module):
         # create the nn architecture
         self.net = self._create_nn_architecture()
 
-    def forward(self, x, training=True):
-        # define your forward pass here
-        x = self.net(x)
+    def forward(self,
+                X: torch.Tensor,
+                training=True) -> Tuple[Any, Any | int] | Any:
+        """forward pass
 
+        Parameters
+        ----------
+        X : torch.Tensor
+            input data
+        training : bool, optional
+            training flag, by default True
+        
+        Returns
+        -------
+        Tuple[Any, Any | int] | Any
+            prediction of the model and prior loss
+
+        """
+        # define your forward pass here
+        X = self.net(X)
         if training:
             # compute the prior loss
             prior_loss = 0
@@ -78,16 +120,16 @@ class LinearNet(nn.Module):
                     prior_loss = prior_loss + \
                         dist.log_prob(m.weight).sum() + \
                         dist.log_prob(m.bias).sum()
-            return x, -prior_loss
+            return X, -prior_loss
         else:
-            return x
+            return X
 
-    def _create_nn_architecture(self) -> Any:
+    def _create_nn_architecture(self) -> nn.Sequential:
         """create the nn architecture
 
         Returns
         -------
-        Any
+        nn.Sequential
             nn architecture
         """
 
@@ -106,12 +148,12 @@ class LinearNet(nn.Module):
 
         return layers
 
-    def _get_activation(self) -> Any:
+    def _get_activation(self) -> nn.Module:
         """get activation function according names
 
         Returns
         -------
-        Any
+        nn.Module
             activation function
 
         Raises
@@ -131,7 +173,10 @@ class LinearNet(nn.Module):
 
 
 class BNNWrapper:
-    # define a neural network class
+    """Bayesian Neural Network (BNN) wrapper class using pSGLD inference, the 
+    user could change to another inference method by using the change_optimizer
+    function.
+    """
     def __init__(self,
                  in_features: int = 1,
                  out_features: int = 1,
@@ -141,6 +186,27 @@ class BNNWrapper:
                  prior_sigma: float = 1.0,
                  sigma: float = 0.1,
                  lr: float = 0.0001) -> None:
+        """initialize the BNN wrapper
+
+        Parameters
+        ----------
+        in_features : int, optional
+            input features, by default 1
+        out_features : int, optional
+            output features, by default 1
+        hidden_features : list, optional
+            hidden feature, by default [20, 20, 20]
+        activation : str, optional
+            activation functions, by default "Tanh"
+        prior_mu : float, optional
+            prior mean the weights, by default 0.0
+        prior_sigma : float, optional
+            prior standard deviation for the weights, by default 1.0
+        sigma : float, optional
+            standard deviation for the likelihood function, by default 0.1
+        lr : float, optional
+            learning rate, by default 0.0001
+        """
         super().__init__()
 
         # define the neural network
@@ -150,27 +216,29 @@ class BNNWrapper:
                                  activation=activation,
                                  prior_mu=prior_mu,
                                  prior_sigma=prior_sigma)
-        # define the sigma (standard deviation of the noise)
+        # standard deviation of the noise, for the likelihood function
         self.sigma = sigma
-        # define the optimizer (Stochastic Gradient Langevin Dynamic optimizer)
+        # define the optimizer (preconditioned 
+        # Stochastic Gradient Langevin Dynamic optimizer)
         self.optimizer = pSGLD(self.network.net.parameters(), lr=lr)
 
     def train(self,
-              x: torch.Tensor,
-              y: torch.Tensor,
+              X: torch.Tensor,
+              Y: torch.Tensor,
               num_epochs: int,
               sample_freq: int,
               burn_in_epochs: int,
-              print_info: bool = True) -> None:
+              verbose: bool = True,
+              verbose_interval: int = 100) -> None:
         """train the neural network, to now the batch size is fixed to the
         same as the number of samples. Later the batch size will be implemented
         when the data is large.
 
         Parameters
         ----------
-        x : torch.Tensor
+        X : torch.Tensor
             input data
-        y : torch.Tensor
+        Y : torch.Tensor
             output data
         num_epochs : int
             number of epochs (including the burn-in epochs and mixing epochs)
@@ -178,6 +246,7 @@ class BNNWrapper:
             sample frequency (how many epochs to sample a new network)
         burn_in_epochs : int
             number of burn-in epochs
+        verbose : bool, optional
         """
         # learning rate
         scheduler = ExponentialLR(self.optimizer, gamma=0.9999)
@@ -197,11 +266,11 @@ class BNNWrapper:
             # set gradient of params to zero
             self.optimizer.zero_grad()
             # get prediction from network
-            pred, prior_loss = self.network(x, training=True)
+            pred, prior_loss = self.network(X, training=True)
             # calculate nll loss
             nll_loss = self._nog_likelihood_function(
                 pred=pred,
-                real=y,
+                real=Y,
                 sigma=self.sigma,  # type: ignore
                 num_dim=self.network.out_features)
 
@@ -216,8 +285,8 @@ class BNNWrapper:
             self.prior_loss_train[ii] = prior_loss.data
             self.total_loss_train[ii] = loss.data
 
-            if print_info and ii % 100 == 0:
-                self._print_info(iter=ii)
+            if verbose and ii % verbose_interval == 0:
+                self._print_info(epoch=ii)
 
             if ii % sample_freq == 0 and ii >= burn_in_epochs:
                 # sample from the posterior
@@ -225,16 +294,15 @@ class BNNWrapper:
                 self.log_likelihood.append(-nll_loss.data.numpy())
                 self.lr_record.append(self.optimizer.param_groups[0]['lr'])
 
-    def predict(self, x: torch.Tensor) -> Any:
+    def predict(self, X: torch.Tensor) -> Any:
 
-        # x = to_variable(var=(x), cuda=False)
 
         responses = []
         responses_weighted = []
         for ii, net in enumerate(self.nets):
             pred_weighted = net(
-                x, training=False).data.numpy()*self.lr_record[ii]
-            pred = net(x, training=False).data.numpy()
+                X, training=False).data.numpy()*self.lr_record[ii]
+            pred = net(X, training=False).data.numpy()
             responses.append(pred)
             responses_weighted.append(pred_weighted)
 
@@ -253,15 +321,25 @@ class BNNWrapper:
 
         return pred_mean, epistemic, total_unc, aleatoric
 
-    def _print_info(self, iter: int) -> None:
+    def change_optimizer(self, optimizer: pSGLD|SGLD|SGHMC) -> None:
+        """change the optimizer
+
+        Parameters
+        ----------
+        optimizer : pSGLD|SGLD|SGHMC
+            optimizer for training the neural network
+        """
+        self.optimizer = optimizer
+
+    def _print_info(self, epoch: int) -> None:
 
         noise_p = self.sigma
         print("==================================================")
-        print("epoch: %5d/%5d" % (iter, self.num_epochs,))
+        print("epoch: %5d/%5d" % (epoch, self.num_epochs,))
         print("nll_loss: %2.3f, prior_loss: %2.3f, total: %2.3f" %
-              (self.nll_loss_train[iter],
-               self.prior_loss_train[iter],
-               self.total_loss_train[iter]))
+              (self.nll_loss_train[epoch],
+               self.prior_loss_train[epoch],
+               self.total_loss_train[epoch]))
         print("noise: %2.3f" % (noise_p))
 
     @staticmethod

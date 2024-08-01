@@ -1,12 +1,38 @@
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for  kernels used in the kernel ridge regression model.
+
+This module contains the classes for kernel that could be used for kernel ridge
+regression  and Gaussian process regression. 
+
+Classes
+-------
+RBF
+    A class for defining the Radial Basis Function kernel.
+
+"""
+
+#                                                                       Modules
+# =============================================================================
+from typing import List
+
+# third party modules
 import numpy as np
+
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
 class RBF(object):
     def __init__(
         self,
         theta: np.ndarray,
-        parameters: list = ["theta"],
-        bounds: list = [-2, 3],
+        parameters: List = ["theta"],
+        bounds: List = [-2, 3],
     ) -> None:
         """calculate the rbf kernel
 
@@ -21,13 +47,13 @@ class RBF(object):
         """
         self.param = 10**theta
         self.parameters = parameters
-        self.bounds = []
+        bounds_temp = []
         self.num_para = theta.size
         for _ in range(self.num_para):
-            self.bounds.append(bounds)
-        self.bounds = np.array(self.bounds)
+            bounds_temp.append(bounds)
+        self.bounds = np.array(bounds_temp)
 
-    def get_kernel_matrix(self, X, Y) -> np.ndarray:
+    def get_kernel_matrix(self, X: np.ndarray, Y: np.ndarray) -> np.ndarray:
         """
         Return the kernel matrix k(x, y).
 
@@ -59,7 +85,7 @@ class RBF(object):
                  param: np.ndarray,
                  ) -> np.ndarray:
         """
-        Return the kernel k(x, y) and optionally its gradient.
+        Return the kernel k(x, y) with respect to the parameters.
 
         Parameters
         ----------
@@ -71,7 +97,7 @@ class RBF(object):
             parameters in the specific kernel, shape=((1, num_params))
         Returns
         -------
-        np.array
+        np.ndarray
             kernel values with respect to parameters param
         """
 
@@ -88,9 +114,15 @@ class RBF(object):
 
         return np.exp(-dist) + np.eye(X.shape[0], Y.shape[0]) * 10 ** -10
 
-    def set_params(self, params) -> None:
+    def set_params(self, params: float) -> None:
         """
         Set the parameters of the kernel.
+
+        Parameters
+        ----------
+        params : float
+            parameters of the kernel
+
         """
         setattr(self, "param", 10**params)
 
@@ -124,7 +156,7 @@ class RBF(object):
         return self.bounds
 
     @property
-    def _get_bounds_list(self) -> list:
+    def _get_bounds_list(self) -> List:
         """Get the parameters' bounds with list
 
         Returns

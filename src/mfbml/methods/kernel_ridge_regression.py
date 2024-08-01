@@ -1,16 +1,40 @@
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for Kernel Ridge Regression (KRR) method
 
+This module contains the classes and functions for training kernel ridge
+regression (KRR) models using numpy and scipy libraries.
+
+Classes
+-------
+RBFKernelRegression
+    A class for training the RBF kernel regression model
+
+"""
+
+#                                                                       Modules
 # =============================================================================
+from typing import List
+
+# third party modules
 import numpy as np
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
 from sklearn.model_selection import train_test_split
 
+# local modules
 from .kernels import RBF
 
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
-class RBFKernelRegression:
+class KernelRidgeRegression:
     """RBF kernel regression, which is used to train the low fidelity model
-    for the MF-RBF- Kriging/GPR method
+    for the KRR-LR-GPR method.
     """
 
     def __init__(self,
@@ -19,8 +43,26 @@ class RBFKernelRegression:
                  optimizer_restart: int = 0,
                  noise_data: bool = False,
                  noise_std: float = 0.1,
+                 kernel: RBF = None,
                  seed: int = 42
                  ) -> None:
+        """Initialize the RBF kernel ridge regression model
+
+        Parameters
+        ----------
+        design_space : np.ndarray
+            design space with shape=((num_dim, 2))
+        params_optimize : bool, optional
+            optimize the hyper-parameter of krr or not, by default True
+        optimizer_restart : int, optional
+            restart the optimizer (l-bfgs-b), by default 0
+        noise_data : bool, optional
+            Does the data noisy or not, by default False
+        noise_std : float, optional
+            standard deviation of noise, by default 0.1
+        seed : int, optional
+            seed for replication, by default 42
+        """
 
         # set random seed
         self.seed = seed
@@ -38,19 +80,19 @@ class RBFKernelRegression:
         self.noise_std = noise_std
 
         # set kernel
-        self.kernel = RBF(theta=np.zeros(self.num_dim))
+        self.kernel = kernel if kernel else RBF(theta=np.ones(self.num_dim))
 
     def train(self,
-              sample_x: np.ndarray,
-              sample_y: np.ndarray,
+              X: np.ndarray,
+              Y: np.ndarray,
               portion_test: float = 0.2) -> None:
-        """Train the surrogate model
+        """Train the KRR model
 
         Parameters
         ----------
-        sample_x : np.ndarray
+        X : np.ndarray
             samples with shape=((num_samples, num_dim))
-        sample_y : np.ndarray
+        Y : np.ndarray
             responses with shape=((num_samples, 1))
         portion_test : float, optional
             portion of samples to optimize the parameters, by default 0.8
@@ -62,12 +104,11 @@ class RBFKernelRegression:
         # portion of samples to optimize the parameters
         self.portion_test = portion_test
         # get samples
-        self.sample_x = sample_x
-        self.sample_y = sample_y
+        self.sample_x = X
+        self.sample_y = Y
         # regularization
-        self.sample_x_scaled = self.normalize_input(sample_x=sample_x,
-                                                    bounds=self.bounds)
-        self.sample_y_scaled = self.normalize_output(sample_y=sample_y)
+        self.sample_x_scaled = self.normalize_input(X=X,bounds=self.bounds)
+        self.sample_y_scaled = self.normalize_output(Y=Y)
 
         if not self.params_optimize:
             self._set_kernel_params(params=np.ones(self.num_dim))
@@ -85,8 +126,20 @@ class RBFKernelRegression:
         # get weights
         self.W = solve(self.L.T, solve(self.L, self.sample_y_scaled))
 
-    def predict(self, x_predict: np.ndarray):
-        sample_new = self.normalize_input(x_predict, self.bounds)
+    def predict(self, X: np.ndarray)-> np.ndarray:
+        """Predict the responses of samples
+
+        Parameters
+        ----------
+        X : np.ndarray
+            unscaled samples with shape=((num_samples, num_dim))
+
+        Returns
+        -------
+        np.ndarray
+            predicted responses with shape=((num_samples, 1))
+        """
+        sample_new = self.normalize_input(X, self.bounds)
         sample_new = np.atleast_2d(sample_new)
 
         # get the kernel matrix for predicted samples(scaled samples)
@@ -98,7 +151,14 @@ class RBFKernelRegression:
 
         return pred
 
-    def _set_kernel_params(self, params: np.ndarray = None):
+    def _set_kernel_params(self, params: np.ndarray = None) -> None:
+        """Set the parameters of the kernel
+
+        Parameters
+        ----------
+        params : np.ndarray, optional
+            parameters for the kernel, by default None
+        """
 
         if self.noise_data and self.params_optimize:
             # we only optimize the noise level when noise_data is True
@@ -111,6 +171,8 @@ class RBFKernelRegression:
             self.kernel.set_params(params=params)
 
     def _optimize_kernel_params(self) -> None:
+        """Optimize the parameters of the kernel
+        """
         # define objective function
         def mse_loss(params):
             # split samples into two parts
@@ -164,8 +226,18 @@ class RBFKernelRegression:
         self._set_kernel_params(params=opt_param)
 
     def _bound_definition_for_optimization(
-            self, noise_bound: list = [10**-3, 10]) -> np.ndarray:
-        """define the bounds for optimization
+            self, noise_bound: List = [10**-3, 10]) -> np.ndarray:
+        """Define the bounds for optimization
+
+        Parameters
+        ----------
+        noise_bound : List, optional
+            noise standard deviation bound, by default [10**-3, 10]
+
+        Returns
+        -------
+        np.ndarray
+            bounds for optimization
         """
 
         if not self.noise_data or not self.params_optimize:
@@ -209,12 +281,12 @@ class RBFKernelRegression:
         else:
             return self.kernel.get_kernel_matrix(scaled_x, scaled_x)
 
-    def normalize_output(self, sample_y: np.ndarray) -> np.ndarray:
+    def normalize_output(self, Y: np.ndarray) -> np.ndarray:
         """Normalize samples to range [0, 1]
 
         Parameters
         ----------
-        sample_y : np.ndarray
+        Y : np.ndarray
             samples to scale
 
         Returns
@@ -222,19 +294,19 @@ class RBFKernelRegression:
         np.ndarray
             normalized samples
         """
-        self.y_mean = sample_y.mean()
-        self.y_std = sample_y.std()
+        self.y_mean = Y.mean()
+        self.y_std = Y.std()
 
-        return (sample_y - self.y_mean) / self.y_std
+        return (Y - self.y_mean) / self.y_std
 
     @staticmethod
-    def normalize_input(sample_x: np.ndarray,
+    def normalize_input(X: np.ndarray,
                         bounds: np.ndarray) -> np.ndarray:
         """Normalize samples to range [0, 1]
 
         Parameters
         ----------
-        sample_x : np.ndarray
+        X : np.ndarray
             samples to scale
         bounds : np.ndarray
             bounds with shape=((num_dim, 2))
@@ -244,4 +316,4 @@ class RBFKernelRegression:
         np.ndarray
             normalized samples
         """
-        return (sample_x - bounds[:, 0]) / (bounds[:, 1] - bounds[:, 0])
+        return (X - bounds[:, 0]) / (bounds[:, 1] - bounds[:, 0])

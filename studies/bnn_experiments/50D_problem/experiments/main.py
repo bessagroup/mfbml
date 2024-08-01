@@ -14,8 +14,8 @@ from f3dasm.datageneration import DataGenerator
 from sklearn.metrics import r2_score
 
 from mfbml.methods.bayes_neural_nets import BNNWrapper
-from mfbml.methods.mf_dnn_bnn import SequentialMFBNN
-from mfbml.methods.mf_dnn_lr_bnn import MFDNNBNN
+from mfbml.methods.dnn_bnn import SequentialMFBNN
+from mfbml.methods.dnn_lr_bnn import MFDNNBNN
 from mfbml.metrics.accuracy_metrics import (mean_log_likelihood_value,
                                             normalized_mae, normalized_rmse)
 

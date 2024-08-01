@@ -1,27 +1,80 @@
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for  kernels used in the kernel ridge regression model.
+
+This module contains the classes for kernel that could be used for kernel ridge
+regression  and Gaussian process regression. 
+
+Classes
+-------
+RBF
+    A class for defining the Radial Basis Function kernel.
+
+"""
+#                                                                       Modules
+# =============================================================================
+# standard library modules
 import time
+from abc import ABC
 from typing import Any, List, Tuple
 
+# third party modules
 import numpy as np
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
-from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
 
-# local modules
+# local functions 
+from .kernel_ridge_regression import KernelRidgeRegression
 from .kernels import RBF
-from .kernel_ridge_regression import RBFKernelRegression
 
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
-class MFRBFGPR:
+class KernelRidgeLinearGaussianProcess(ABC):
+    """A class for the kernel ridge regression model + linear transfer model 
+     Gaussian process regression model.
+
+    Parameters
+    ----------
+    ABC : ABC
+        abstract base class
+    """
     def __init__(
         self,
         design_space: np.ndarray,
         optimizer: Any = None,
         optimizer_restart: int = 0,
-        kernel: Any = None,
+        kernel: RBF = None,
         noise_prior: float = None,
+        lf_model: KernelRidgeRegression= None,
+        lf_poly_order: str = "linear",
         seed: int = 42,
     ) -> None:
+        """Initialize the model of KRR + linear transfer model + GPR
+
+        Parameters
+        ----------
+        design_space : np.ndarray
+            design space of this problem
+        optimizer : Any, optional
+            third party optimizer, by default None
+        optimizer_restart : int, optional
+            restart the optimizer, by default 0
+        kernel : RBF, optional
+            kernel for Gaussian process regression, by default None
+        noise_prior : float, optional
+            noise standard deviation, by default None
+        lf_model : KernelRidgeRegression, optional
+            low-fidelity model, by default None
+        lf_poly_order : str, optional
+            polynomial order of , by default "linear"
+        seed : int, optional
+            numpy seed for replication, by default 42
+        """
 
         np.random.seed(seed)
         self.bounds = design_space
@@ -31,21 +84,21 @@ class MFRBFGPR:
 
         # get the noise level
         self.noise = noise_prior
-
         # define kernel
-        if kernel is None:
-            self.kernel = RBF(theta=np.ones(self.num_dim))
-        else:
-            self.kernel = kernel
+        self.kernel = kernel if kernel else RBF(theta=np.ones(self.num_dim))
+
+        # get lf polynomial order
+        self.lf_poly_order = lf_poly_order
 
         # define the lf model
-        self.lf_model = RBFKernelRegression(design_space=self.bounds,
-                                            params_optimize=True,
-                                            noise_data=True,
-                                            optimizer_restart=optimizer_restart,
-                                            seed=seed)
+        self.lf_model = lf_model if lf_model else \
+            KernelRidgeRegression(design_space=self.bounds,
+                                    params_optimize=True,
+                                    noise_data=True,
+                                    optimizer_restart=optimizer_restart,
+                                    seed=seed)
 
-    def train(self, samples: List, responses: List) -> None:
+    def train(self, X: List, Y: List) -> None:
         """Train the hierarchical gaussian process model
 
         Parameters
@@ -60,22 +113,23 @@ class MFRBFGPR:
         """
 
         # get samples and normalize them
-        self.sample_xh = samples[0]
-        self.sample_xl = samples[1]
+        self.sample_xh = X[0]
+        self.sample_xl = X[1]
         self.sample_xh_scaled = self.normalize_input(self.sample_xh)
         self.sample_xl_scaled = self.normalize_input(self.sample_xl)
 
         # get responses and normalize them
-        self.sample_yh = responses[0]
-        self.sample_yl = responses[1]
+        self.sample_yh = Y[0]
+        self.sample_yl = Y[1]
         self.sample_yh_scaled = self.normalize_hf_output(self.sample_yh)
         self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
         # rbf surrogate model would normalize the inputs directly
         start_time = time.time()
-        self.lf_model.train(samples[1], responses[1])
+        self.lf_model.train(X[1], Y[1])
         lf_train_time = time.time()
         # prediction of low-fidelity at high-fidelity locations
-        self.f = self._basis_function(self.sample_xh)
+        self.f = self._basis_function(self.sample_xh,
+                                      poly_order=self.lf_poly_order)
         # optimize the hyper parameters of kernel
         self._optimize_parameters()
         # update parameters
@@ -88,19 +142,34 @@ class MFRBFGPR:
                 X: np.ndarray,
                 return_std: bool = False
                 ) -> Tuple[np.ndarray, np.ndarray]:
+        """get the prediction of the kernel ridge regression model + linear 
+        transfer model + Gaussian process regression model
+
+        Parameters
+        ----------
+        X : np.ndarray
+            unknown samples with shape (n_samples, n_features)
+        return_std : bool, optional
+            get the predictive uncertainty or not, by default False
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            A tuple of predicted mean and standard deviation
+        """
         # normalize the input
         sample_new = self.normalize_input(X)
         sample_new = np.atleast_2d(sample_new)
         # get the kernel matrix for predicted samples(scaled samples)
         knew = self.kernel.get_kernel_matrix(self.sample_xh_scaled, sample_new)
         # calculate the predicted mean
-        f = self._basis_function(X)
+        f = self._basis_function(X, poly_order=self.lf_poly_order)
         # get the mean
         fmean = np.dot(f, self.beta) + np.dot(knew.T, self.gamma)
         fmean = (fmean * self.yh_std + self.yh_mean).reshape(-1, 1)
         # calculate the standard deviation
         if not return_std:
-            return fmean.reshape(-1, 1)
+            return fmean
         else:
             delta = solve(self.L.T, solve(self.L, knew))
             R = f.T - np.dot(self.f.T, delta)
@@ -118,6 +187,9 @@ class MFRBFGPR:
             return fmean, total_unc
 
     def _optimize_parameters(self) -> None:
+        """optimize the parameter of the model (parameters of the GPR model)
+        """
+
         if self.noise is None:
             # noise value needs to be optimized
             lower_bound_theta = self.kernel._get_low_bound
@@ -167,7 +239,20 @@ class MFRBFGPR:
             opt_param = optRes["best_x"]
         self.opt_param = opt_param
 
-    def _logLikelihood(self, params):
+    def _logLikelihood(self, params: np.ndarray) -> np.ndarray:
+        """calculate the ln-concentrated likelihood of the Gaussian process
+        model
+
+        Parameters
+        ----------
+        params : np.ndarray
+            a set of parameters for the kernel
+
+        Returns
+        -------
+        np.ndarray
+            negative ln-concentrated likelihood
+        """
 
         params = np.atleast_2d(params)
         num_params = params.shape[1]
@@ -208,7 +293,11 @@ class MFRBFGPR:
                             gamma) / self._num_xh
 
             # step 3: calculate the log likelihood
-            logp = -0.5 * self._num_xh * sigma2 - np.sum(np.log(np.diag(L)))
+            if self.noise == 0.0:
+                logp = -0.5 * self._num_xh * \
+                np.log(sigma2) - np.sum(np.log(np.diag(L)))
+            else: 
+                logp = -0.5 * self._num_xh * sigma2 - np.sum(np.log(np.diag(L)))
 
             nll[i] = -logp.ravel()
 
@@ -265,6 +354,18 @@ class MFRBFGPR:
         return self.lf_model.predict(X)
 
     def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
+        """Normalize the input according to the design soace
+
+        Parameters
+        ----------
+        inputs : np.ndarray
+            input samples with shape (n_samples, n_features)
+
+        Returns
+        -------
+        np.ndarray
+            normalized samples in to the design 
+        """
 
         return (inputs - self.bounds[:, 0]) / (
             self.bounds[:, 1] - self.bounds[:, 0]
@@ -272,18 +373,22 @@ class MFRBFGPR:
 
     def normalize_hf_output(self, outputs: np.ndarray) -> np.ndarray:
 
+
         self.yh_mean = np.mean(outputs)
         self.yh_std = np.std(outputs)
 
         return (outputs - self.yh_mean) / self.yh_std
 
-    def _basis_function(self, x: np.ndarray) -> np.ndarray:
+    def _basis_function(self, X: np.ndarray,
+                        poly_order: str = "linear") -> np.ndarray:
         """Calculate the basis function
 
         Parameters
         ----------
-        x : np.ndarray
+        X : np.ndarray
             sample points
+        poly_order : str, optional
+            order of polynomial, by default "linear"
 
         Returns
         -------
@@ -291,10 +396,28 @@ class MFRBFGPR:
             basis function
         """
         # get the prediction of low-fidelity at high-fidelity locations
-        f = self.predict_lf(x)
+        f = self.predict_lf(X)
+        # scale the low-fidelity prediction to the same scale as high-fidelity
         f = (f-self.yh_mean)/self.yh_std
-        # assemble the basis function by having the first column as 1
-        f = np.hstack((np.ones((f.shape[0], 1)), f))
+
+        if poly_order == "ordinary":
+            # ordinary polynomial (it retrieves back to single fidelity)
+            f = np.ones((f.shape[0], 1))
+        elif poly_order == "linear_without_const":
+            # assemble the basis function without the first column
+            f = f
+        elif poly_order == "linear":
+            # assemble the basis function by having the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f))
+        elif poly_order == "quadratic":
+            # assemble the basis function with the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2))
+        elif poly_order == "cubic":
+            # assemble the basis function with the first column as 1
+            f = np.hstack((np.ones((f.shape[0], 1)), f, f**2, f**3))
+
+        else:
+            raise ValueError("Invalid polynomial order")
 
         return f
 
@@ -330,7 +453,7 @@ class MFRBFGPR:
         int
             #low-fidelity samples
         """
-        return self.lf_model._num_samples
+        return self.sample_xl.shape[0]
 
     @property
     def _get_sample_hf(self) -> np.ndarray:
