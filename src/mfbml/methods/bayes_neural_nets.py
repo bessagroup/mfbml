@@ -24,6 +24,7 @@ from typing import Any, Tuple
 import numpy as np
 import torch
 import torch.nn as nn
+from torch import Tensor
 from torch.optim.lr_scheduler import ExponentialLR
 
 # local library
@@ -36,6 +37,7 @@ __author__ = 'J.Yi@tudelft.nl'
 __credits__ = ['Jiaxiang Yi']
 __status__ = 'Stable'
 # =============================================================================
+
 
 class LinearNet(nn.Module):
     """ Linear neural network class with prior distribution on weights
@@ -69,11 +71,9 @@ class LinearNet(nn.Module):
             prior mean, by default 0.0
         prior_sigma : float, optional
             prior sigma, by default 1.0
-        
 
-        """ 
+        """
         super().__init__()
-
         # define prior distribution for weight and bias
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
@@ -99,7 +99,6 @@ class LinearNet(nn.Module):
             input data
         training : bool, optional
             training flag, by default True
-        
         Returns
         -------
         Tuple[Any, Any | int] | Any
@@ -173,10 +172,10 @@ class LinearNet(nn.Module):
 
 
 class BNNWrapper:
-    """Bayesian Neural Network (BNN) wrapper class using pSGLD inference, the 
-    user could change to another inference method by using the change_optimizer
-    function.
+    """Bayesian Neural Network (BNN) wrapper class using pSGLD inference, the
+    user could change to another inference method.
     """
+
     def __init__(self,
                  in_features: int = 1,
                  out_features: int = 1,
@@ -218,7 +217,7 @@ class BNNWrapper:
                                  prior_sigma=prior_sigma)
         # standard deviation of the noise, for the likelihood function
         self.sigma = sigma
-        # define the optimizer (preconditioned 
+        # define the optimizer (preconditioned
         # Stochastic Gradient Langevin Dynamic optimizer)
         self.optimizer = pSGLD(self.network.net.parameters(), lr=lr)
 
@@ -294,8 +293,16 @@ class BNNWrapper:
                 self.log_likelihood.append(-nll_loss.data.numpy())
                 self.lr_record.append(self.optimizer.param_groups[0]['lr'])
 
-    def predict(self, X: torch.Tensor) -> Any:
+    def predict(self,
+                X: Tensor) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+        """predict the output of the Bayesian Neural Network
 
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray, np.ndarray, float]
+            mean, epistemic uncertainty,
+            total uncertainty, aleatoric uncertainty
+        """
 
         responses = []
         responses_weighted = []
@@ -321,7 +328,7 @@ class BNNWrapper:
 
         return pred_mean, epistemic, total_unc, aleatoric
 
-    def change_optimizer(self, optimizer: pSGLD|SGLD|SGHMC) -> None:
+    def change_optimizer(self, optimizer: pSGLD | SGLD | SGHMC) -> None:
         """change the optimizer
 
         Parameters

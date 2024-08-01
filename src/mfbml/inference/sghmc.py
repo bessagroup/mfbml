@@ -1,21 +1,32 @@
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for Stochastic Gradient Hamiltonian MC Sampler using PyTorch.
+
+Classes
+-------
+SGHMC
+    Stochastic Gradient Hamiltonian Monte-Carlo Sampler that uses a burn-in
+    procedure to adapt its own hyperparameters during the initial stages
+    of sampling. Code is adapted from the original implementation in
+    `torch.optim.SGD`.
+"""
+#
+#                                                                       Modules
+# =============================================================================
+# third party modules
 import numpy as np
 import torch
 from torch.optim import Optimizer
 
-
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 class SGHMC(Optimizer):
     """ Stochastic Gradient Hamiltonian Monte-Carlo Sampler that uses a burn-in
         procedure to adapt its own hyperparameters during the initial stages
-        of sampling. 
-
-        Note: this code is took from: https://github.com/automl/pybnn
-
-        See [1] for more details on Stochastic Gradient Hamiltonian Monte-Carlo.
-
-        [1] T. Chen, E. B. Fox, C. Guestrin
-            In Proceedings of Machine Learning Research 32 (2014).\n
-            `Stochastic Gradient Hamiltonian Monte Carlo <https://arxiv.org/pdf/1402.4102.pdf>`_
-
+        of sampling.
     """
     name = "SGHMC"
 
@@ -55,7 +66,19 @@ class SGHMC(Optimizer):
         )
         super().__init__(params, defaults)
 
-    def step(self, closure=None):
+    def step(self, closure=None) -> float | None:
+        """ Performs a single optimization step.
+
+        Parameters
+        ----------
+        closure : optional
+            default torch optimizer variable, by default None
+
+        Returns
+        -------
+        float | None
+            loss value
+        """
         loss = None
 
         if closure is not None:
@@ -82,7 +105,7 @@ class SGHMC(Optimizer):
 
                     state["iteration"] += 1
 
-                    mdecay, lr, wd = group["mdecay"], group["lr"], group["wd"]
+                    mdecay, lr = group["mdecay"], group["lr"]
                     scale_grad = group["scale_grad"]
 
                     momentum = state["momentum"]
@@ -93,8 +116,8 @@ class SGHMC(Optimizer):
                     sample_t = torch.normal(mean=torch.zeros_like(
                         gradient), std=torch.ones_like(gradient) * sigma)
 
-                    # update the momentum and parameters according to algorithm 2
+                    # update the momentum and parameters
                     parameter.data.add_(lr * mdecay * momentum)
-                    momentum.add_(-lr * gradient - mdecay *
-                                  lr * momentum + sample_t)
+                    momentum.add_(
+                        -lr * gradient - mdecay * lr * momentum + sample_t)
         return loss

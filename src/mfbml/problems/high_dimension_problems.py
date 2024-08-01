@@ -1,10 +1,36 @@
-# this script is used for implementing mfb test suites from Handing Wang's 2018
-# paper
+# ------------------ Beginning of Reference Python Module ---------------------
+""" This module contains the classes for high dimensional problems and it is
+implemented in PyTorch.
 
+Classes
+-------
+MFB1
+    A class for the mfb1 function
+MengCase1
+    A class for Meng's case 1 function
+Rosenbrock
+    A class for the Rosenbrock function
+Paciorek
+    A class for the Paciorek function
+Meng20D
+    A class for Meng's 20D function
+Meng4D
+    A class for Meng's 4D function
 
-from typing import Any
-
+"""
+#
+#                                                                       Modules
+# =============================================================================
+# third party modules
 import torch
+
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
 class MFB1:
@@ -27,7 +53,7 @@ class MFB1:
 
         Parameters
         ----------
-        samples : dict
+        samples: dict
             samples
 
         Returns
@@ -53,10 +79,10 @@ class MFB1:
 
         Parameters
         ----------
-        x : torch.Tensor
+        x: torch.Tensor
             high fidelity input x
-        noise_hf : float, optional
-            noise std, by default None#type:ignore
+        noise_hf: float, optional
+            noise std, by default None  # type:ignore
 
         Returns
         -------
@@ -80,10 +106,10 @@ class MFB1:
 
         Parameters
         ----------
-        x : torch.Tensor
+        x: torch.Tensor
             low fidelity input x
-        noise_lf : float, optional
-            noise std, by default None#type:ignore
+        noise_lf: float, optional
+            noise std, by default None  # type:ignore
 
         Returns
         -------
@@ -104,7 +130,7 @@ class MFB1:
 
         Parameters
         ----------
-        x : torch.Tensor
+        x: torch.Tensor
             input
 
         Returns
@@ -154,7 +180,7 @@ class MFB1:
 
         return 10.0*torch.pi*self.theta
 
-    @ property
+    @property
     def theta(self) -> float:
         """theta function
 
@@ -168,13 +194,7 @@ class MFB1:
 
 
 class MengCase1:
-    """Meng's case 1, 
-
-    reference:
-    ---------
-    [1] Meng, Xuhui / Babaee, Hessam / Karniadakis, George Em 
-    Multi-fidelity Bayesian neural networks: Algorithms and applications 
-    2021 
+    """Meng's case 1,
 
     """
 
@@ -234,15 +254,16 @@ class MengCase1:
         if noise_hf is None:  # use the default noise
             noise_hf = self.noise_std
 
-        obj = torch.sin(8*torch.pi*x)**2*(x - torch.sqrt(torch.Tensor([2.0]))) + \
-            noise_hf * torch.randn(x.shape)
+        obj = torch.sin(8*torch.pi*x)**2*(x -
+                                          torch.sqrt(torch.Tensor([2.0])))\
+            + noise_hf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
 
     def lf1(self,
-           x: torch.Tensor,
-           noise_lf: float = None  # type: ignore
-           ) -> torch.Tensor:
+            x: torch.Tensor,
+            noise_lf: float = None  # type: ignore
+            ) -> torch.Tensor:
         """low fidelity function
 
         Parameters
@@ -264,7 +285,7 @@ class MengCase1:
             noise_lf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
-    
+
     def lf2(self,
             x: torch.Tensor,
             noise_lf: float = None  # type: ignore
@@ -277,7 +298,7 @@ class MengCase1:
             noise_lf * torch.randn(x.shape)
 
         return obj.reshape(-1, 1)
-    
+
     def lf3(self,
             x: torch.Tensor,
             noise_lf: float = None  # type: ignore
@@ -286,11 +307,10 @@ class MengCase1:
         """
         if noise_lf is None:
             noise_lf = self.noise_std
-        
+
         obj = torch.sin(16*torch.pi*x)**2 + \
             noise_lf * torch.randn(x.shape)
         return obj.reshape(-1, 1)
-    
 
 
 class Rosenbrock:
@@ -335,7 +355,7 @@ class Rosenbrock:
         x : torch.Tensor
               high fidelity input x
         noise_hf : float, optional
-              noise std, by default None 
+              noise std, by default None
 
         Returns
         -------
@@ -433,7 +453,7 @@ class Paciorek:
         x : torch.Tensor
               high fidelity input x
         noise_hf : float, optional
-              noise std, by default None 
+              noise std, by default None
 
         Returns
         -------

@@ -32,6 +32,7 @@ __credits__ = ['Jiaxiang Yi']
 __status__ = 'Stable'
 # =============================================================================
 
+
 class KernelRidgeRegression:
     """RBF kernel regression, which is used to train the low fidelity model
     for the KRR-LR-GPR method.
@@ -107,7 +108,7 @@ class KernelRidgeRegression:
         self.sample_x = X
         self.sample_y = Y
         # regularization
-        self.sample_x_scaled = self.normalize_input(X=X,bounds=self.bounds)
+        self.sample_x_scaled = self.normalize_input(X=X, bounds=self.bounds)
         self.sample_y_scaled = self.normalize_output(Y=Y)
 
         if not self.params_optimize:
@@ -116,7 +117,7 @@ class KernelRidgeRegression:
             self._optimize_kernel_params()
 
         # get kernel matrix
-        self.K = self._calculate_training_kernel_matrix(
+        self.K = self._training_kernel_matrix(
             scaled_x=self.sample_x_scaled,
             scaled_noise_std=self.noise_std/self.y_std)
 
@@ -126,7 +127,7 @@ class KernelRidgeRegression:
         # get weights
         self.W = solve(self.L.T, solve(self.L, self.sample_y_scaled))
 
-    def predict(self, X: np.ndarray)-> np.ndarray:
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """Predict the responses of samples
 
         Parameters
@@ -186,7 +187,7 @@ class KernelRidgeRegression:
             # set parameters
             self._set_kernel_params(params=params)
             #
-            K = self._calculate_training_kernel_matrix(
+            K = self._training_kernel_matrix(
                 scaled_x=X_train,
                 scaled_noise_std=self.noise_std/self.y_std)
             # LU decomposition of K
@@ -257,9 +258,9 @@ class KernelRidgeRegression:
 
         return bounds
 
-    def _calculate_training_kernel_matrix(self,
-                                          scaled_x: np.ndarray,
-                                          scaled_noise_std: float) -> np.ndarray:
+    def _training_kernel_matrix(self,
+                                scaled_x: np.ndarray,
+                                scaled_noise_std: float) -> np.ndarray:
         """Calculate the kernel matrix for training samples
 
         Parameters

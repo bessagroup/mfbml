@@ -2,7 +2,7 @@
 """ Module for  kernels used in the kernel ridge regression model.
 
 This module contains the classes for kernel that could be used for kernel ridge
-regression  and Gaussian process regression. 
+regression  and Gaussian process regression.
 
 Classes
 -------

@@ -9,16 +9,16 @@ import numpy as np
 def mean_log_likelihood_value(y_true: np.ndarray,
                               y_pred_mean: np.ndarray,
                               y_pred_std: np.ndarray) -> float | Any:
-    """mean log likelihood value for Bayesian machine learning model
+    """mean log likelihood value for Bayesian model
 
     Parameters
     ----------
     y_true : np.ndarray
         true values without noise
     y_pred_mean : np.ndarray
-        predicted mean values from bayesian machine learning model
+        predicted mean values from bayesian model
     y_pred_std : np.ndarray
-        predicted standard deviation values from bayesian machine learning model
+        predicted standard deviation values from Bayesian model
 
     Returns
     -------
@@ -49,7 +49,8 @@ def normalized_rmse(y_true: np.ndarray,
         normalized root mean squared error
     """
 
-    return np.sqrt(np.mean((y_true - y_pred_mean)**2)) / np.mean(np.abs(y_true))
+    return np.sqrt(np.mean((y_true - y_pred_mean)**2)) \
+        / np.mean(np.abs(y_true))
 
 
 def normalized_mae(y_true: np.ndarray,

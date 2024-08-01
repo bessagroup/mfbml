@@ -40,15 +40,24 @@ def get_method(method_name: str, design_space: np.ndarray) -> Any:
     """
 
     if method_name == 'kriging':
-        return GaussianProcess(design_space=design_space, optimizer_restart=10, noise_prior=0.0)
+        return GaussianProcess(design_space=design_space,
+                               optimizer_restart=10,
+                               noise_prior=0.0)
     elif method_name == 'hk':
-        return HierarchicalKriging(design_space=design_space, noise_prior=0.0,  optimizer_restart=10)
+        return HierarchicalKriging(design_space=design_space,
+                                   noise_prior=0.0,
+                                   optimizer_restart=10)
     elif method_name == 'ck':
-        return CoKriging(design_space=design_space, noise_prior=0.0, optimizer_restart=10)
+        return CoKriging(design_space=design_space,
+                         noise_prior=0.0,
+                         optimizer_restart=10)
     elif method_name == 'mf_rbf':
-        return MFRBFKriging(design_space=design_space, optimizer_restart=10)
+        return MFRBFKriging(design_space=design_space,
+                            optimizer_restart=10)
     elif method_name == 'mf_scale':
-        return ScaledKriging(design_space=design_space,  noise_prior=0.0, optimizer_restart=10)
+        return ScaledKriging(design_space=design_space,
+                             noise_prior=0.0,
+                             optimizer_restart=10)
     else:
         raise ValueError('method name not found')
 

@@ -1,16 +1,12 @@
-from typing import Any, Dict
+
 
 import torch
-import torch.nn as nn
-# import Variable
 from torch.autograd import Variable
 from torch.optim import Optimizer
 
-# class for Langevin_SGD optimizer
-
 
 class SGLD(Optimizer):
-    """Langevin Stochastic Gradient Descent optimizer. It is used for 
+    """Langevin Stochastic Gradient Descent optimizer. It is used for
     bayesian neural networks. It is a variant of SGD optimizer.
     """
 
@@ -50,7 +46,7 @@ class SGLD(Optimizer):
         for group in self.param_groups:
             group.setdefault('nesterov', False)
 
-    def step(self, closure=None) -> float:
+    def step(self, closure=None) -> torch.Tensor:
         """Performs a single optimization step."""
 
         loss = None

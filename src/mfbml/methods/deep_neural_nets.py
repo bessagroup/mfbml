@@ -1,5 +1,5 @@
 # ------------------ Beginning of Reference Python Module ---------------------
-""" Module for  deep neural networks used in multi-fidelity Bayesian neural 
+""" Module for  deep neural networks used in multi-fidelity Bayesian neural
 networks as the low fidelity model.
 
 This module contains the classes for multi-layer perceptron (MLP) and low
@@ -12,8 +12,8 @@ MLP
 LFDNN
     A class for training low fidelity deep neural network.
 
-
 """
+
 #                                                                       Modules
 # =============================================================================
 # standard library modules
@@ -22,7 +22,7 @@ from typing import Any
 # third party modules
 import torch
 from sklearn.model_selection import train_test_split
-from torch import nn as nn
+from torch import nn
 from torch.utils.data import DataLoader
 
 #
@@ -32,6 +32,7 @@ __author__ = 'J.Yi@tudelft.nl'
 __credits__ = ['Jiaxiang Yi']
 __status__ = 'Stable'
 # =============================================================================
+
 
 class MLP(nn.Module):
     def __init__(
@@ -184,13 +185,13 @@ class LFDNN(MLP):
 
         # get the loss function
         self.loss = self._get_loss(loss_name=loss)
-        # seed 
+        # seed
         self.seed = seed
 
-    def train(self, 
+    def train(self,
               X: torch.Tensor,
               Y: torch.Tensor,
-              batch_size: int | bool = None, 
+              batch_size: int | bool = None,
               num_epoch: int = 1000,
               print_iter: int = 100,
               test_portion: float = 0.2,
@@ -229,7 +230,7 @@ class LFDNN(MLP):
         if self.batch_size is None and self.data_split is True:
             self.batch_size = len(X_train)
         else:
-            self.batch_size = len(x)
+            self.batch_size = len(X)
 
         # create the data loader
         loader = DataLoader(list(zip(X_train, y_train)),

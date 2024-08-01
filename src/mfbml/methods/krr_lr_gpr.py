@@ -2,7 +2,7 @@
 """ Module for  kernels used in the kernel ridge regression model.
 
 This module contains the classes for kernel that could be used for kernel ridge
-regression  and Gaussian process regression. 
+regression  and Gaussian process regression.
 
 Classes
 -------
@@ -10,6 +10,7 @@ RBF
     A class for defining the Radial Basis Function kernel.
 
 """
+
 #                                                                       Modules
 # =============================================================================
 # standard library modules
@@ -22,7 +23,7 @@ import numpy as np
 from numpy.linalg import cholesky, solve
 from scipy.optimize import minimize
 
-# local functions 
+# local functions
 from .kernel_ridge_regression import KernelRidgeRegression
 from .kernels import RBF
 
@@ -34,8 +35,9 @@ __credits__ = ['Jiaxiang Yi']
 __status__ = 'Stable'
 # =============================================================================
 
+
 class KernelRidgeLinearGaussianProcess(ABC):
-    """A class for the kernel ridge regression model + linear transfer model 
+    """A class for the kernel ridge regression model + linear transfer model
      Gaussian process regression model.
 
     Parameters
@@ -43,6 +45,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
     ABC : ABC
         abstract base class
     """
+
     def __init__(
         self,
         design_space: np.ndarray,
@@ -50,7 +53,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
         optimizer_restart: int = 0,
         kernel: RBF = None,
         noise_prior: float = None,
-        lf_model: KernelRidgeRegression= None,
+        lf_model: KernelRidgeRegression = None,
         lf_poly_order: str = "linear",
         seed: int = 42,
     ) -> None:
@@ -93,10 +96,10 @@ class KernelRidgeLinearGaussianProcess(ABC):
         # define the lf model
         self.lf_model = lf_model if lf_model else \
             KernelRidgeRegression(design_space=self.bounds,
-                                    params_optimize=True,
-                                    noise_data=True,
-                                    optimizer_restart=optimizer_restart,
-                                    seed=seed)
+                                  params_optimize=True,
+                                  noise_data=True,
+                                  optimizer_restart=optimizer_restart,
+                                  seed=seed)
 
     def train(self, X: List, Y: List) -> None:
         """Train the hierarchical gaussian process model
@@ -142,7 +145,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
                 X: np.ndarray,
                 return_std: bool = False
                 ) -> Tuple[np.ndarray, np.ndarray]:
-        """get the prediction of the kernel ridge regression model + linear 
+        """get the prediction of the kernel ridge regression model + linear
         transfer model + Gaussian process regression model
 
         Parameters
@@ -295,9 +298,10 @@ class KernelRidgeLinearGaussianProcess(ABC):
             # step 3: calculate the log likelihood
             if self.noise == 0.0:
                 logp = -0.5 * self._num_xh * \
-                np.log(sigma2) - np.sum(np.log(np.diag(L)))
-            else: 
-                logp = -0.5 * self._num_xh * sigma2 - np.sum(np.log(np.diag(L)))
+                    np.log(sigma2) - np.sum(np.log(np.diag(L)))
+            else:
+                logp = -0.5 * self._num_xh * \
+                    sigma2 - np.sum(np.log(np.diag(L)))
 
             nll[i] = -logp.ravel()
 
@@ -331,7 +335,8 @@ class KernelRidgeLinearGaussianProcess(ABC):
         # step 2: get the optimal sigma2
         self.gamma = solve(self.L.T, solve(
             self.L, (self.sample_yh_scaled - np.dot(self.f, self.beta))))
-        self.sigma2 = np.dot((self.sample_yh_scaled - np.dot(self.f, self.beta)).T,
+        self.sigma2 = np.dot((self.sample_yh_scaled -
+                             np.dot(self.f, self.beta)).T,
                              self.gamma) / self._num_xh
 
         # step 3: get the optimal log likelihood
@@ -354,7 +359,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
         return self.lf_model.predict(X)
 
     def normalize_input(self, inputs: np.ndarray) -> np.ndarray:
-        """Normalize the input according to the design soace
+        """Normalize the input according to the design space
 
         Parameters
         ----------
@@ -364,7 +369,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
         Returns
         -------
         np.ndarray
-            normalized samples in to the design 
+            normalized samples in to the design space
         """
 
         return (inputs - self.bounds[:, 0]) / (
@@ -372,7 +377,6 @@ class KernelRidgeLinearGaussianProcess(ABC):
         )
 
     def normalize_hf_output(self, outputs: np.ndarray) -> np.ndarray:
-
 
         self.yh_mean = np.mean(outputs)
         self.yh_std = np.std(outputs)
