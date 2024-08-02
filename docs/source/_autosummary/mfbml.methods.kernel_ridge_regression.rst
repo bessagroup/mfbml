@@ -2,41 +2,41 @@ mfbml.methods.kernel\_ridge\_regression
 =======================================
 
 .. automodule:: mfbml.methods.kernel_ridge_regression
+  
+   
+   
+   
 
-    
-    
-    
+   
+   
+   .. rubric:: Functions
 
-    
-    
-    .. rubric:: Functions
+   .. autosummary::
+      :toctree:
+   
+      cholesky
+      minimize
+      solve
+      train_test_split
+   
+   
 
-    .. autosummary::
-    :toctree:
-    
-    cholesky
-    minimize
-    solve
-    train_test_split
-    
-    
+   
+   
+   .. rubric:: Classes
 
-    
-    
-    .. rubric:: Classes
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      KernelRidgeRegression
+      RBF
+   
+   
 
-    .. autosummary::
-    :toctree:
-    :template: custom-class-template.rst
-    
-    KernelRidgeRegression
-    RBF
-    
-    
-
-    
-    
-    
+   
+   
+   
 
 
 

@@ -2,39 +2,39 @@ mfbml.methods.deep\_neural\_nets
 ================================
 
 .. automodule:: mfbml.methods.deep_neural_nets
+  
+   
+   
+   
 
-    
-    
-    
+   
+   
+   .. rubric:: Functions
 
-    
-    
-    .. rubric:: Functions
+   .. autosummary::
+      :toctree:
+   
+      train_test_split
+   
+   
 
-    .. autosummary::
-    :toctree:
-    
-    train_test_split
-    
-    
+   
+   
+   .. rubric:: Classes
 
-    
-    
-    .. rubric:: Classes
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      DataLoader
+      LFDNN
+      MLP
+   
+   
 
-    .. autosummary::
-    :toctree:
-    :template: custom-class-template.rst
-    
-    DataLoader
-    LFDNN
-    MLP
-    
-    
-
-    
-    
-    
+   
+   
+   
 
 
 

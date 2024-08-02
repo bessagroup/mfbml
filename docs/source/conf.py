@@ -4,26 +4,24 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 
-import os
-import sys
-
 # -- Search path for extensions and modules -----------------------------------
 # If extensions or Python modules are in a different directory than this file,
 # then add these directories to sys.path so that Sphinx can search for them
 # Source: https://docs.python.org/3/library/sys.html#sys.path
-
+import os
+import sys
 sys.path.insert(0,  os.path.abspath('../..'))
 sys.path.insert(0,  os.path.abspath('../../src'))
-# src_dir = [f.path for f in os.scandir(os.path.abspath('../../src/')) if f.is_dir()]
-# for path in src_dir:
-# sys.path.insert(0,  path)
+src_dir = [f.path for f in os.scandir(os.path.abspath('../../src/')) if f.is_dir()]
+for path in src_dir:
+	sys.path.insert(0,  path)
 
 
 # -- Project information ------------------------------------------------------
 # Source: https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-project = 'mfbml'
-author = 'Jiaxiang Yi'
-copyright = '2024, Jiaxiang Yi'
+project = 'MFBML'
+author = 'Jiaxiang YI'
+copyright = '2020, Jiaxiang YI'
 version = '1.0'
 release = '1.0.0'
 
@@ -34,15 +32,15 @@ release = '1.0.0'
 # Source: https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-extensions
 # Requires installation of Python package 'sphinx-autodoc-typehints'
 extensions = ['sphinx.ext.duration',
-              'sphinx.ext.autodoc',
-              'sphinx.ext.napoleon',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.intersphinx',
-              'sphinx.ext.viewcode',
-              'sphinx_autodoc_typehints',]
+			  'sphinx.ext.autodoc',
+			  'sphinx.ext.napoleon',
+			  'sphinx.ext.autosummary',
+			  'sphinx.ext.intersphinx',
+			  'sphinx.ext.viewcode',
+			  'sphinx_autodoc_typehints']
 
 # Source: https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-source_suffix
-source_suffix = {'.rst': 'restructuredtext', }
+source_suffix = {'.rst': 'restructuredtext',}
 
 # Source: https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-root_doc
 root_doc = 'index'
@@ -89,10 +87,10 @@ autosummary_imported_members = True
 
 # intersphinx: https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#module-sphinx.ext.intersphinx
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3/", None),
+    "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None)}
-
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None)
+}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -102,10 +100,10 @@ intersphinx_mapping = {
 # Source: https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-html_theme_path
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
-    html_theme = 'default'
+	html_theme = 'default'
 else:
-    # Source: https://sphinx-rtd-theme.readthedocs.io/en/stable/index.html
-    # Requires installation of Python package 'sphinx_rtd_theme'
+	# Source: https://sphinx-rtd-theme.readthedocs.io/en/stable/index.html
+	# Requires installation of Python package 'sphinx_rtd_theme'
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]

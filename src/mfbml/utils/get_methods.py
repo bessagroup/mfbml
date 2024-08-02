@@ -40,7 +40,8 @@ __status__ = 'Stable'
 # =============================================================================
 
 
-def get_method(method_name: str, design_space: np.ndarray) -> Any:
+def get_method(method_name: str,
+               design_space: np.ndarray) -> Any:
     """get and initialize a method for the data scarce noiseless problem sets
 
     Parameters

@@ -2,55 +2,55 @@
 =====
 
 .. automodule:: mfbml
+  
+   
+   
+   
 
-    
-    
-    
+   
+   
+   .. rubric:: Functions
 
-    
-    
-    .. rubric:: Functions
+   .. autosummary::
+      :toctree:
+   
+      mean_log_likelihood_value
+      normalized_mae
+      normalized_rmse
+      register_problem
+   
+   
 
-    .. autosummary::
-    :toctree:
-    
-    mean_log_likelihood_value
-    normalized_mae
-    normalized_rmse
-    register_problem
-    
-    
+   
+   
+   .. rubric:: Classes
 
-    
-    
-    .. rubric:: Classes
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      DNNBNN
+      DNNLinearRegressionBNN
+      KernelRidgeLinearGaussianProcess
+   
+   
 
-    .. autosummary::
-    :toctree:
-    :template: custom-class-template.rst
-    
-    DNNBNN
-    DNNLinearRegressionBNN
-    KernelRidgeLinearGaussianProcess
-    
-    
-
-    
-    
-    
+   
+   
+   
 
 
 
 .. rubric:: Modules
 
 .. autosummary::
-    :toctree:
-    :template: custom-module-template.rst
-    :recursive:
+   :toctree:
+   :template: custom-module-template.rst
+   :recursive:
 
-    inference
-    methods
-    metrics
-    problems
-    utils
+   inference
+   methods
+   metrics
+   problems
+   utils
 

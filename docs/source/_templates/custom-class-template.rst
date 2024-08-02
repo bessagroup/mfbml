@@ -3,34 +3,34 @@
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
-    :members:
-    :show-inheritance:
-    :inherited-members:
-    :special-members: __call__, __add__, __mul__
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
-    {% block methods %}
-    {% if methods %}
-    .. rubric:: {{ _('List of Public Methods') }}
+   {% block methods %}
+   {% if methods %}
+   .. rubric:: {{ _('List of Public Methods') }}
 
-    .. autosummary::
-    :nosignatures:
-    {% for item in methods %}
-    {%- if not item.startswith('_') %}
-    ~{{ name }}.{{ item }}
-    {%- endif -%}
-    {%- endfor %}
-    {% endif %}
-    {% endblock %}
+   .. autosummary::
+      :nosignatures:
+   {% for item in methods %}
+      {%- if not item.startswith('_') %}
+      ~{{ name }}.{{ item }}
+      {%- endif -%}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}
 
-    {% block attributes %}
-    {% if attributes %}
-    .. rubric:: {{ _('Attributes') }}
+   {% block attributes %}
+   {% if attributes %}
+   .. rubric:: {{ _('Attributes') }}
 
-    .. autosummary::
-    {% for item in attributes %}
-    ~{{ name }}.{{ item }}
-    {%- endfor %}
-    {% endif %}
-    {% endblock %}
+   .. autosummary::
+   {% for item in attributes %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}
 
-    .. rubric:: {{ _('Methods') }}
+   .. rubric:: {{ _('Methods') }}

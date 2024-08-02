@@ -2,39 +2,39 @@ mfbml.utils
 ===========
 
 .. automodule:: mfbml.utils
+  
+   
+   
+   
 
-    
-    
-    
+   
+   
+   .. rubric:: Functions
 
-    
-    
-    .. rubric:: Functions
+   .. autosummary::
+      :toctree:
+   
+      get_method
+      get_methods_for_noise_data
+   
+   
 
-    .. autosummary::
-    :toctree:
-    
-    get_method
-    get_methods_for_noise_data
-    
-    
+   
+   
+   
 
-    
-    
-    
-
-    
-    
-    
+   
+   
+   
 
 
 
 .. rubric:: Modules
 
 .. autosummary::
-    :toctree:
-    :template: custom-module-template.rst
-    :recursive:
+   :toctree:
+   :template: custom-module-template.rst
+   :recursive:
 
-    get_methods
+   get_methods
 

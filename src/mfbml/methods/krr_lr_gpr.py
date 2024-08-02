@@ -1,13 +1,13 @@
 # ------------------ Beginning of Reference Python Module ---------------------
-""" Module for  kernels used in the kernel ridge regression model.
+""" Module for  kernels used in the kernel ridge regression + Linear transfer-
+learning + Gaussian process regression model.
 
-This module contains the classes for kernel that could be used for kernel ridge
-regression  and Gaussian process regression.
+
 
 Classes
 -------
-RBF
-    A class for defining the Radial Basis Function kernel.
+KernelRidgeLinearGaussianProcess
+    A class for the proposed KRR-LR-GPR model.
 
 """
 

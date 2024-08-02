@@ -2,54 +2,54 @@ mfbml.problems
 ==============
 
 .. automodule:: mfbml.problems
+  
+   
+   
+   
 
-    
-    
-    
+   
+   
+   .. rubric:: Functions
 
-    
-    
-    .. rubric:: Functions
+   .. autosummary::
+      :toctree:
+   
+      register_problem
+   
+   
 
-    .. autosummary::
-    :toctree:
-    
-    register_problem
-    
-    
+   
+   
+   .. rubric:: Classes
 
-    
-    
-    .. rubric:: Classes
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      MFB1
+      Meng20D
+      Meng4D
+      MengCase1
+      Rosenbrock
+      mf_Forrester
+      mf_Forrester_torch
+   
+   
 
-    .. autosummary::
-    :toctree:
-    :template: custom-class-template.rst
-    
-    MFB1
-    Meng20D
-    Meng4D
-    MengCase1
-    Rosenbrock
-    mf_Forrester
-    mf_Forrester_torch
-    
-    
-
-    
-    
-    
+   
+   
+   
 
 
 
 .. rubric:: Modules
 
 .. autosummary::
-    :toctree:
-    :template: custom-module-template.rst
-    :recursive:
+   :toctree:
+   :template: custom-module-template.rst
+   :recursive:
 
-    high_dimension_problems
-    illutrative_problems
-    low_dimension_problems
+   high_dimension_problems
+   illutrative_problems
+   low_dimension_problems
 

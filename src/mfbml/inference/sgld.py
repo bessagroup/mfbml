@@ -1,8 +1,27 @@
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for Stochastic Gradient Langevin Dynamics Sampler using PyTorch.
 
-
+Classes
+-------
+SGLD
+    Stochastic Gradient Hamiltonian Monte-Carlo Sampler that
+    uses a burn-in procedure to adapt its own hyperparameters during the
+    initial stages of sampling.
+"""
+#
+#                                                                       Modules
+# =============================================================================
+# import Variable
 import torch
 from torch.autograd import Variable
 from torch.optim import Optimizer
+
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
 class SGLD(Optimizer):

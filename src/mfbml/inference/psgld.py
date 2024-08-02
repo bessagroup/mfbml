@@ -1,20 +1,35 @@
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for preconditioned Stochastic Gradient Langevin Dynamics Sampler
+using PyTorch.
 
+Classes
+-------
+pSGLD
+    preconditioned Stochastic Gradient Hamiltonian Monte-Carlo Sampler that
+    uses a burn-in procedure to adapt its own hyperparameters during the
+    initial stages of sampling.
+"""
+#
+#                                                                       Modules
+# =============================================================================
 # import Variable
 import torch
 from torch.autograd import Variable
 from torch.optim import Optimizer
 
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
-# class for preconditioned SGLD optimizer (pSGLD)
+
 class pSGLD(Optimizer):
     """ Pre-conditoned Langevin Stochastic Gradient Descent optimizer. It is
-     used for bayesian neural networks. It is a variant of SGD and SGLD
-     optimizer.
+    used for bayesian neural networks. It is a variant of SGD and SGLD
+    optimizer.
 
-    .. [1] Li, C., Chen, C., Carlson, D., & Carin, L. (2016, February).
-    "Preconditioned stochastic gradient Langevin dynamics for deep neural
-    networks". In Proceedings of the AAAI conference on artificial
-    intelligence (Vol. 30, No. 1).
     """
 
     def __init__(self,

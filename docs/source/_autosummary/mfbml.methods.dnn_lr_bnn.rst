@@ -2,39 +2,39 @@ mfbml.methods.dnn\_lr\_bnn
 ==========================
 
 .. automodule:: mfbml.methods.dnn_lr_bnn
+  
+   
+   
+   
 
-    
-    
-    
+   
+   
+   .. rubric:: Functions
 
-    
-    
-    .. rubric:: Functions
+   .. autosummary::
+      :toctree:
+   
+      minimize
+   
+   
 
-    .. autosummary::
-    :toctree:
-    
-    minimize
-    
-    
+   
+   
+   .. rubric:: Classes
 
-    
-    
-    .. rubric:: Classes
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      BNNWrapper
+      DNNLinearRegressionBNN
+      LFDNN
+   
+   
 
-    .. autosummary::
-    :toctree:
-    :template: custom-class-template.rst
-    
-    BNNWrapper
-    DNNLinearRegressionBNN
-    LFDNN
-    
-    
-
-    
-    
-    
+   
+   
+   
 
 
 

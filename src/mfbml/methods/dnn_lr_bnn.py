@@ -27,7 +27,6 @@ from typing import Any, Dict, List
 import numpy as np
 import torch
 from scipy.optimize import minimize
-from torch import nn as nn
 
 # local modules
 from mfbml.methods.bayes_neural_nets import BNNWrapper
