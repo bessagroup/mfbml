@@ -2,32 +2,32 @@ mfbml.inference.sgld
 ====================
 
 .. automodule:: mfbml.inference.sgld
+  
+   
+   
+   
 
-    
-    
-    
+   
+   
+   
 
-    
-    
-    
+   
+   
+   .. rubric:: Classes
 
-    
-    
-    .. rubric:: Classes
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      Optimizer
+      SGLD
+      Variable
+   
+   
 
-    .. autosummary::
-    :toctree:
-    :template: custom-class-template.rst
-    
-    Optimizer
-    SGLD
-    Variable
-    
-    
-
-    
-    
-    
+   
+   
+   
 
 
 

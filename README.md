@@ -1,22 +1,31 @@
-# MF-BML
+<p align="center">
+    <img src="docs/source/figures/logo.png" width="70%" align="center">
+</p>
 
-A general Multi-Fidelity Bayesian Machine Learning framework: from data scarce to large data set
+# What is MFBML?
+---
+[**Documentation**](https://bessagroup.github.io/mfbml/)
+| [**Installation**](https://bessagroup.github.io/mfbml/get_started.html)
+| [**GitHub**](https://github.com/bessagroup/mfbml)
+| [**Tutorials**](https://github.com/bessagroup/mfbml/tree/main/tutorials)
 
 ---
 
 ### **Summary**
 
-This repo provides provide a general Multi-Fidelity Bayesian Machine Learning framework. The developed MF-BML framework can be used to handle both data scarce and large data set scenario depending on the employed algorithm within the framework. Although the developed MF-BML framework doesn't restrict any algorithm, two configurations are recommended in this repo for handling data scarce and large data set problems respectively.
+**mfbml** provides provide a general Multi-Fidelity Bayesian Machine Learning framework. The developed MF-BML framework can be used to handle both data scarce and data rich data set scenario depending on the employed algorithm within the framework. The developed MF-BML framework doesn't restrict any algorithm, two configurations are recommended in this repo for handling data scarce and large data set problems respectively.
 
 ---
 
 ### **State of need**
 
-Detailed methodology description is given in the paper.
+`mfbml` is a package that supports general multi-fidelity Bayesian machine learning. Two practical multi-fidelity Bayesian machine learning algorithms from the <a href="https://arxiv.org/abs/2407.15110" target="_blank">paper</a>: 1) Kernel Ridge Regression + Linear Transfer-learning + Gaussian Process Regression (KRR-LR-GPR), implemented based on [Numpy](https://numpy.org/); 2) Deep Neural Network + Linear Transfer-learning + Bayesian Neural Network (DNN-LR-BNN), implemented based on [Pytorch](https://pytorch.org/). 
+
+In the particular case of a research environment, `mfbml is designed to easily accommodate further developments, either by improving the already implemented methods or by including new numerical models and techniques.
 
 ---
 
-### **Authorship**
+### **Authorship and Citation**
 
 **Author**:
 
@@ -26,7 +35,18 @@ Detailed methodology description is given in the paper.
 
 - Delft University of Technology
 
----
+**arXiv** ([paper](https://arxiv.org/abs/2407.15110)):
+```
+@misc{yi2024practicalmultifidelitymachinelearning,
+      title={Practical multi-fidelity machine learning: fusion of deterministic and Bayesian models}, 
+      author={Jiaxiang Yi and Ji Cheng and Miguel A. Bessa},
+      year={2024},
+      eprint={2407.15110},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2407.15110}, 
+}
+```
 
 ### Get started
 
@@ -54,9 +74,7 @@ pip install -r requirements.txt
 
 ### **Community Support**
 
-Now everything is under developing, if you have any question, please contact to the developer.
-
-### **Credits**
+If you have any question, please raise an issue on GitHub or contact the developer
 
 ### **License**
 

@@ -6,12 +6,42 @@
 mfbml documentation
 ===================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+.. image:: figures/logo.svg
+   :alt: logo
+   :width: 100%
+   :align: center
+   
+`Docs <https://bessagroup.github.io/mfbml/>`__ | `GitHub <https://github.com/bessagroup/mfbml.git>`__
+
+**First publication:** August 2, 2024
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
+
+   readme.rst
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Get started:
+
+   get_started.rst
+
+
+
+----
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :name: apitoc
+   :caption: API
+   :hidden:
 
+   API reference <_autosummary/mfbml>
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

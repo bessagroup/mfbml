@@ -4,23 +4,23 @@ mfbml.inference.sgld.Variable
 .. currentmodule:: mfbml.inference.sgld
 
 .. autoclass:: Variable
-    :members:
-    :show-inheritance:
-    :inherited-members:
-    :special-members: __call__, __add__, __mul__
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
-    
-    
-    .. rubric:: List of Public Methods
+   
+   
+   .. rubric:: List of Public Methods
 
-    .. autosummary::
-    :nosignatures:
-    
-    
-    
+   .. autosummary::
+      :nosignatures:
+   
+   
+   
 
-    
-    
-    
+   
+   
+   
 
-    .. rubric:: Methods
+   .. rubric:: Methods
