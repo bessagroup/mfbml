@@ -83,5 +83,5 @@ __pycache__/
 
 # folders
 coverage_html_report/
-examples/
+# examples/
 *_final_backup/
