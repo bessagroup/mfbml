@@ -27,6 +27,14 @@ import torch
 from mfbml.methods.bayes_neural_nets import BNNWrapper
 from mfbml.methods.deep_neural_nets import LFDNN
 
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
+
 
 class DNNBNN:
     """

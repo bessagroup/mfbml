@@ -21,7 +21,7 @@ function_two
 #                                                                       Modules
 # =============================================================================
 # standard library
-from typing import Dict, List
+from typing import Any, Dict, List
 
 # third party modules
 import numpy as np
@@ -42,7 +42,7 @@ __status__ = 'Stable'
 # =============================================================================
 
 
-class DNNLinearRegressionBNN(nn.Module):
+class DNNLinearRegressionBNN:
     """A class for the multi-fidelity DNN-BNN framework, the first step of the
     multi-fidelity framework is to create a low-fidelity model the low-fidelity
     model is a DNN the DNN is created using the LFDNN; the second step of the
@@ -98,11 +98,11 @@ class DNNLinearRegressionBNN(nn.Module):
         self.discrepancy_normalization = discrepancy_normalization
 
         # create the low-fidelity model
-        self.define_lf_model()
+        self.define_lf_model(lf_model=None)
         # create the high-fidelity model
-        self.define_hf_model()
+        self.define_hf_model(hf_model=None)
 
-    def define_lf_model(self, lf_model: LFDNN = None) -> None:
+    def define_lf_model(self, lf_model: Any = None) -> None:
         """create the low-fidelity model, it can be defined by using passing a
         dictionary containing the configuration of the low-fidelity model or
         passing a LFDNN object directly from this function.
@@ -121,7 +121,7 @@ class DNNLinearRegressionBNN(nn.Module):
         else:
             self.lf_model = lf_model
 
-    def define_hf_model(self, hf_model: BNNWrapper = None) -> None:
+    def define_hf_model(self, hf_model: Any = None) -> None:
         """create the high-fidelity model, it can be defined by using passing a
         dictionary containing the configuration of the high-fidelity model or
         passing a BNNWrapper object directly from this function.
@@ -141,8 +141,8 @@ class DNNLinearRegressionBNN(nn.Module):
             self.hf_model = hf_model
 
     def train(self,
-              samples: List,
-              responses: List,
+              X: List,
+              Y: List,
               lf_train_config: Dict = {"batch_size": None,
                                        "num_epochs": 1000,
                                        "print_iter": 100,
@@ -156,10 +156,10 @@ class DNNLinearRegressionBNN(nn.Module):
 
         Parameters
         ----------
-        samples : List
+        X : List
             a dictionary containing the low-fidelity and high-fidelity samples,
             original scale is expected, with the key "lf" and "hf"
-        responses : List
+        Y : List
             a dictionary containing the low-fidelity and high-fidelity
             responses, original scale is expected, with the key "lf" and "hf"
         lf_train_config : dict, optional
@@ -170,16 +170,16 @@ class DNNLinearRegressionBNN(nn.Module):
             "sample_freq": 100, "print_info": True, "burn_in_epochs": 1000}
         """
         # get the low-fidelity samples
-        self.lf_samples = samples[1]
+        self.lf_samples = X[1]
         self.lf_samples_scaled = self.normalize_inputs(self.lf_samples)
         # get the high-fidelity samples
-        self.hf_samples = samples[0]
+        self.hf_samples = X[0]
         self.hf_samples_scaled = self.normalize_inputs(self.hf_samples)
         # get the low-fidelity responses
-        self.lf_responses = responses[1]
+        self.lf_responses = Y[1]
         self.lf_responses_scaled = self.normalize_lf_output(self.lf_responses)
         # get the high-fidelity responses
-        self.hf_responses = responses[0]
+        self.hf_responses = Y[0]
         # train the low-fidelity model
         self.train_lf_model(X=self.lf_samples_scaled,
                             Y=self.lf_responses_scaled,
@@ -250,7 +250,7 @@ class DNNLinearRegressionBNN(nn.Module):
                             Y=dis_hf_lf_samples,
                             num_epochs=hf_train_config["num_epochs"],
                             sample_freq=hf_train_config["sample_freq"],
-                            print_info=hf_train_config["print_info"],
+                            verbose=hf_train_config["print_info"],
                             burn_in_epochs=hf_train_config["burn_in_epochs"])
 
     def predict(self, X: torch.Tensor):

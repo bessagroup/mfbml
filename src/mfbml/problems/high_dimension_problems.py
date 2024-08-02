@@ -18,9 +18,14 @@ Meng4D
     A class for Meng's 4D function
 
 """
+
 #
 #                                                                       Modules
 # =============================================================================
+# standard library modules
+from abc import ABC
+from typing import List
+
 # third party modules
 import torch
 
@@ -33,28 +38,24 @@ __status__ = 'Stable'
 # =============================================================================
 
 
-class MFB1:
-    """class for mfb1 function"""
+class MultiFidelityProblem_(ABC):
+    """base class for multi-fidelity problems
 
-    def __init__(self,
-                 num_dim: int,
-                 noise_std: float,
-                 phi: float) -> None:
-        """constructor"""
-        # get the dimension
-        self.num_dim = num_dim
-        # set the noise std
-        self.noise_std = noise_std
-        # set the phi
-        self.phi = phi
+    Parameters
+    ----------
+    ABC : class
+        abstract base class
+    """
 
-    def __call__(self, samples: dict) -> dict:
+    def __call__(self, X: List) -> List:
         """evaluate the function
 
         Parameters
         ----------
-        samples: dict
-            samples
+        X: List
+            a list of samples, the fist element is the high fidelity samples
+            and the second element is the low fidelity samples
+
 
         Returns
         -------
@@ -62,17 +63,77 @@ class MFB1:
             responses
         """
 
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
-
         # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
+        responses = [self.hf(X[0]), self.lf(X[1])]
 
         return responses
 
-    def hf(self, x: torch.Tensor,
+    def hf(self, X: torch.Tensor,
+           noise_hf: float = 0.0) -> torch.Tensor:
+        """high fidelity function
+
+        Parameters
+        ----------
+        X: torch.Tensor
+              high fidelity input x
+        noise_hf: float, optional
+              noise std, by default None
+
+        Returns
+        -------
+        torch.Tensor
+              outputs
+        """
+
+        raise NotImplementedError
+
+    def lf(self, X: torch.Tensor,
+           noise_lf: float = 0.0) -> torch.Tensor:
+        """low fidelity function
+
+        Parameters
+        ----------
+        X: torch.Tensor
+                low fidelity input x
+        noise_lf: float, optional
+                noise std, by default None
+
+        Returns
+        -------
+        torch.Tensor
+                outputs
+        """
+
+        raise NotImplementedError
+
+
+class MFB1(MultiFidelityProblem_):
+    """class for mfb1 function"""
+
+    def __init__(self,
+                 num_dim: int,
+                 noise_std: float,
+                 phi: float) -> None:
+        """initialize the function
+
+        Parameters
+        ----------
+        num_dim : int
+            number of dimension
+        noise_std : float
+            noise standard deviation, assume the noise is Gaussian
+        phi : float
+            a factor that controls the correlation between the high and low
+            fidelity functions
+        """
+        # get the dimension
+        self.num_dim = num_dim
+        # set the noise std
+        self.noise_std = noise_std
+        # set the phi
+        self.phi = phi
+
+    def hf(self, X: torch.Tensor,
            noise_hf: float = None  # type: ignore
            ) -> torch.Tensor:
         """high fidelity function
@@ -90,27 +151,26 @@ class MFB1:
             outputs
         """
 
-        if noise_hf is None:  # use the default noise
+        if noise_hf is None:
             noise_hf = self.noise_std
 
-        obj = (x**2+1-torch.cos(10*torch.pi*x)).sum(dim=1, keepdim=True) + \
-            noise_hf * torch.randn(x.shape[0]).reshape(-1, 1)
+        obj = (X**2+1-torch.cos(10*torch.pi*X)).sum(dim=1, keepdim=True) + \
+            noise_hf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
     def lf(self,
-           x: torch.Tensor,
+           X: torch.Tensor,
            noise_lf: float = None  # type: ignore
            ) -> torch.Tensor:
         """low fidelity function
 
         Parameters
         ----------
-        x: torch.Tensor
-            low fidelity input x
+        X: torch.Tensor
+            low fidelity input X
         noise_lf: float, optional
-            noise std, by default None  # type:ignore
-
+            noise std, by default None
         Returns
         -------
         torch.Tensor
@@ -120,17 +180,17 @@ class MFB1:
         if noise_lf is None:  # use the default noise
             noise_lf = self.noise_std
 
-        obj = self.hf(x, noise_hf=0.0) + self.error(x) + \
-            noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
+        obj = self.hf(X, noise_hf=0.0) + self.error(X) + \
+            noise_lf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
-    def error(self, x: torch.Tensor) -> torch.Tensor:
+    def error(self, X: torch.Tensor) -> torch.Tensor:
         """error function
 
         Parameters
         ----------
-        x: torch.Tensor
+        X: torch.Tensor
             input
 
         Returns
@@ -139,7 +199,7 @@ class MFB1:
             outputs
         """
 
-        obj = self.a*torch.cos(self.w*x + self.b +
+        obj = self.a*torch.cos(self.w*X + self.b +
                                torch.pi).sum(dim=1, keepdim=True)
 
         return obj.reshape(-1, 1)
@@ -193,7 +253,7 @@ class MFB1:
         return 1 - 0.0001 * self.phi
 
 
-class MengCase1:
+class MengCase1(MultiFidelityProblem_):
     """Meng's case 1,
 
     """
@@ -209,39 +269,15 @@ class MengCase1:
         # noise standard deviation
         self.noise_std = noise_std
 
-    def __call__(self, samples: dict) -> dict:
-        """evaluate the problem
-
-        Parameters
-        ----------
-        samples : dict
-            samples
-
-        Returns
-        -------
-        dict
-            responses
-        """
-
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
-
-        # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
-
-        return responses
-
-    def hf(self, x: torch.Tensor,
+    def hf(self, X: torch.Tensor,
            noise_hf: float = None  # type: ignore
            ) -> torch.Tensor:
         """high fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
-            high fidelity input x
+        X : torch.Tensor
+            high fidelity input X
         noise_hf : float, optional
             noise std, by default None#type:ignore
 
@@ -250,25 +286,25 @@ class MengCase1:
         torch.Tensor
             outputs
         """
-
-        if noise_hf is None:  # use the default noise
+        # use the default noise
+        if noise_hf is None:
             noise_hf = self.noise_std
 
-        obj = torch.sin(8*torch.pi*x)**2*(x -
+        obj = torch.sin(8*torch.pi*X)**2*(X -
                                           torch.sqrt(torch.Tensor([2.0])))\
-            + noise_hf * torch.randn(x.shape)
+            + noise_hf * torch.randn(X.shape)
 
         return obj.reshape(-1, 1)
 
     def lf1(self,
-            x: torch.Tensor,
+            X: torch.Tensor,
             noise_lf: float = None  # type: ignore
             ) -> torch.Tensor:
         """low fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
+        X : torch.Tensor
             input tensor
         noise_lf : float, optional
             noise standard deviation, by default None
@@ -281,39 +317,51 @@ class MengCase1:
 
         if noise_lf is None:  # use the default noise
             noise_lf = self.noise_std
-        obj = torch.sin(8*torch.pi*x) + \
-            noise_lf * torch.randn(x.shape)
+        obj = torch.sin(8*torch.pi*X) + \
+            noise_lf * torch.randn(X.shape)
 
         return obj.reshape(-1, 1)
 
     def lf2(self,
-            x: torch.Tensor,
+            X: torch.Tensor,
             noise_lf: float = None  # type: ignore
             ) -> torch.Tensor:
         """low fidelity function
         """
         if noise_lf is None:
             noise_lf = self.noise_std
-        obj = 1.2*self.hf(x, noise_hf=0.0) - 0.5 +  \
-            noise_lf * torch.randn(x.shape)
+        obj = 1.2*self.hf(X, noise_hf=0.0) - 0.5 +  \
+            noise_lf * torch.randn(X.shape)
 
         return obj.reshape(-1, 1)
 
     def lf3(self,
-            x: torch.Tensor,
+            X: torch.Tensor,
             noise_lf: float = None  # type: ignore
             ) -> torch.Tensor:
         """low fidelity function
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            input tensor
+        noise_lf : float, optional
+            noise standard deviation, by default None
+
+        Returns
+        -------
+        torch.Tensor
+            output tensor
         """
         if noise_lf is None:
             noise_lf = self.noise_std
 
-        obj = torch.sin(16*torch.pi*x)**2 + \
-            noise_lf * torch.randn(x.shape)
+        obj = torch.sin(16*torch.pi*X)**2 + \
+            noise_lf * torch.randn(X.shape)
         return obj.reshape(-1, 1)
 
 
-class Rosenbrock:
+class Rosenbrock(MultiFidelityProblem_):
 
     def __init__(self, num_dim: int,
                  noise_std: float) -> None:
@@ -321,39 +369,15 @@ class Rosenbrock:
         self.num_dim = num_dim
         self.noise_std = noise_std
 
-    def __call__(self, samples: dict) -> dict:
-        """evaluate the problem
-
-        Parameters
-        ----------
-        samples : dict
-            samples
-
-        Returns
-        -------
-        dict
-            responses
-        """
-
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
-
-        # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
-
-        return responses
-
-    def hf(self, x: torch.Tensor,
+    def hf(self, X: torch.Tensor,
            noise_hf: float = None  # type: ignore
            ) -> torch.Tensor:
         """high fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
-              high fidelity input x
+        X : torch.Tensor
+              high fidelity input X
         noise_hf : float, optional
               noise std, by default None
 
@@ -369,22 +393,22 @@ class Rosenbrock:
         # use a for loop to compute the sum
         list_of_sum = []
         for i in range(self.num_dim - 1):
-            val = 100 * (x[:, i + 1] - x[:, i] ** 2) ** 2 + (1 - x[:, i]) ** 2
+            val = 100 * (X[:, i + 1] - X[:, i] ** 2) ** 2 + (1 - X[:, i]) ** 2
             list_of_sum.append(val)
 
         obj = torch.stack(list_of_sum, dim=1).sum(dim=1, keepdim=True) + \
-            noise_hf * torch.randn(x.shape[0]).reshape(-1, 1)
+            noise_hf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
-    def lf(self, x: torch.Tensor,
+    def lf(self, X: torch.Tensor,
            noise_lf: float = None  # type: ignore
            ) -> torch.Tensor:
         """low fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
+        X : torch.Tensor
               input tensor
         noise_lf : float, optional
               noise standard deviation, by default None
@@ -401,17 +425,17 @@ class Rosenbrock:
         # use a for loop to compute the sum
         list_of_sum = []
         for i in range(self.num_dim - 1):
-            val = 50 * (x[:, i + 1] - x[:, i] ** 2) ** 2 + (-2 - x[:, i]) ** 2
+            val = 50 * (X[:, i + 1] - X[:, i] ** 2) ** 2 + (-2 - X[:, i]) ** 2
             list_of_sum.append(val)
 
         obj = torch.stack(list_of_sum, dim=1).sum(dim=1, keepdim=True) \
-            - 0.5*x.sum(dim=1, keepdim=True) + \
-            noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
+            - 0.5*X.sum(dim=1, keepdim=True) + \
+            noise_lf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
 
-class Paciorek:
+class Paciorek(MultiFidelityProblem_):
     """Paciorek function, design space is [0,1]^d
     """
 
@@ -421,37 +445,13 @@ class Paciorek:
         self.num_dim = num_dim
         self.noise_std = noise_std
 
-    def __call__(self, samples: dict) -> dict:
-        """evaluate the problem
-
-        Parameters
-        ----------
-        samples : dict
-            samples
-
-        Returns
-        -------
-        dict
-            responses
-        """
-
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
-
-        # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
-
-        return responses
-
-    def hf(self, x: torch.Tensor, noise_hf: float = None) -> torch.Tensor:
+    def hf(self, X: torch.Tensor, noise_hf: float = None) -> torch.Tensor:
         """high fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
-              high fidelity input x
+        X : torch.Tensor
+              high fidelity input X
         noise_hf : float, optional
               noise std, by default None
 
@@ -466,19 +466,19 @@ class Paciorek:
 
         # use a for loop to compute the sum
 
-        obj = torch.sin(1.0/x.prod(dim=1, keepdim=True)) + \
-            noise_hf * torch.randn(x.shape[0]).reshape(-1, 1)
+        obj = torch.sin(1.0/X.prod(dim=1, keepdim=True)) + \
+            noise_hf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
-    def lf(self, x: torch.Tensor,
+    def lf(self, X: torch.Tensor,
            noise_lf: float = None,
            A=0.5) -> torch.Tensor:
         """low fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
+        X : torch.Tensor
               input tensor
         noise_lf : float, optional
               noise standard deviation, by default None
@@ -494,14 +494,14 @@ class Paciorek:
 
         # use a for loop to compute the sum
 
-        obj = self.hf(x, noise_hf=0.0) + \
-            9*A**2*torch.cos(1./x.prod(dim=1, keepdim=True)) +\
-            noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
+        obj = self.hf(X, noise_hf=0.0) + \
+            9*A**2*torch.cos(1./X.prod(dim=1, keepdim=True)) +\
+            noise_lf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
 
-class Meng20D:
+class Meng20D(MultiFidelityProblem_):
 
     def __init__(self,
                  num_dim: int = 20,
@@ -519,37 +519,13 @@ class Meng20D:
         self.noise_std = noise_std
         self.num_dim = num_dim
 
-    def __call__(self, samples: dict) -> dict:
-        """evaluate the problem
-
-        Parameters
-        ----------
-        samples : dict
-            samples
-
-        Returns
-        -------
-        dict
-            responses
-        """
-
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
-
-        # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
-
-        return responses
-
-    def hf(self, x: torch.Tensor, noise_hf: float = None) -> torch.Tensor:
+    def hf(self, X: torch.Tensor, noise_hf: float = None) -> torch.Tensor:
         """high fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
-              high fidelity input x
+        X : torch.Tensor
+              high fidelity input X
         noise_hf : float, optional
               noise std, by default None
 
@@ -565,22 +541,22 @@ class Meng20D:
         # use a for loop to compute the sum
         list_of_sum = []
         for i in range(self.num_dim - 1):
-            val = (2*x[:, i + 1] ** 2 - x[:, i]) ** 2
+            val = (2*X[:, i + 1] ** 2 - X[:, i]) ** 2
             list_of_sum.append(val)
 
         obj = torch.stack(list_of_sum, dim=1).sum(dim=1, keepdim=True) + \
-            torch.reshape((x[:, 0]-1.0)**2, (-1, 1)) + noise_hf * \
-            torch.randn(x.shape[0]).reshape(-1, 1)
+            torch.reshape((X[:, 0]-1.0)**2, (-1, 1)) + noise_hf * \
+            torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
-    def lf(self, x: torch.Tensor,
+    def lf(self, X: torch.Tensor,
            noise_lf: float = None) -> torch.Tensor:
         """low fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
+        X : torch.Tensor
             input tensor
         noise_lf : float, optional
             noise standard deviation, by default None
@@ -596,17 +572,17 @@ class Meng20D:
 
         list_of_sum = []
         for i in range(self.num_dim - 1):
-            val = 0.4*(x[:, i + 1]*x[:, i])
+            val = 0.4*(X[:, i + 1]*X[:, i])
             list_of_sum.append(val)
 
-        obj = 0.8*self.hf(x, noise_hf=0.0) - \
+        obj = 0.8*self.hf(X, noise_hf=0.0) - \
             torch.stack(list_of_sum, dim=1).sum(dim=1, keepdim=True) - 50 +\
-            noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
+            noise_lf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
 
-class Meng4D:
+class Meng4D(MultiFidelityProblem_):
 
     def __init__(self,
                  noise_std: float = 0.0) -> None:
@@ -621,37 +597,13 @@ class Meng4D:
         self.noise_std = noise_std
         self.num_dim = 4
 
-    def __call__(self, samples: dict) -> dict:
-        """evaluate the problem
-
-        Parameters
-        ----------
-        samples : dict
-            samples
-
-        Returns
-        -------
-        dict
-            responses
-        """
-
-        # get samples
-        hf_samples = samples["hf"]
-        lf_samples = samples["lf"]
-
-        # evaluate the problem
-        responses = {"hf": self.hf(hf_samples),
-                     "lf": self.lf(lf_samples)}
-
-        return responses
-
-    def hf(self, x: torch.Tensor, noise_hf: float = None) -> torch.Tensor:
+    def hf(self, X: torch.Tensor, noise_hf: float = None) -> torch.Tensor:
         """high fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
-              high fidelity input x
+        X : torch.Tensor
+              high fidelity input X
         noise_hf : float, optional
               noise std, by default None
 
@@ -665,21 +617,21 @@ class Meng4D:
             noise_hf = self.noise_std
 
         # use a for loop to compute the sum
-        obj = 0.5*(0.1*torch.exp(x[:, 0] + x[:, 1]) +
-                   x[:, 3]*torch.sin(12*torch.pi*x[:, 2]) + x[:, 2])
+        obj = 0.5*(0.1*torch.exp(X[:, 0] + X[:, 1]) +
+                   X[:, 3]*torch.sin(12*torch.pi*X[:, 2]) + X[:, 2])
         # reshape the obj
         obj = obj.reshape(-1, 1)
         # add noise
-        obj = obj + noise_hf * torch.randn(x.shape[0]).reshape(-1, 1)
+        obj = obj + noise_hf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)
 
-    def lf(self, x: torch.Tensor, noise_lf: float = None) -> torch.Tensor:
+    def lf(self, X: torch.Tensor, noise_lf: float = None) -> torch.Tensor:
         """low fidelity function
 
         Parameters
         ----------
-        x : torch.Tensor
+        X : torch.Tensor
             input tensor
         noise_lf : float, optional
             noise standard deviation, by default None
@@ -693,7 +645,7 @@ class Meng4D:
         if noise_lf is None:
             noise_lf = self.noise_std
 
-        obj = 1.2*self.hf(x, noise_hf=0.0) - 0.5 + \
-            noise_lf * torch.randn(x.shape[0]).reshape(-1, 1)
+        obj = 1.2*self.hf(X, noise_hf=0.0) - 0.5 + \
+            noise_lf * torch.randn(X.shape[0]).reshape(-1, 1)
 
         return obj.reshape(-1, 1)

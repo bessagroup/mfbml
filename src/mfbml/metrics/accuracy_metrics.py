@@ -1,9 +1,32 @@
-# this file contains the accuracy metrics for the gpr model and MF-RBF-GPR for
-# evaluating the performance of the model. The accuracy metrics are the log
-# marginal likelihood.
+
+# ------------------ Beginning of Reference Python Module ---------------------
+"""This module contains functions to evaluate the performance of the model.
+
+Functions
+---------
+mean_log_likelihood_value
+    mean log likelihood value for Bayesian model
+normalized_rmse
+    normalized root mean squared error(NRMSE)
+normalized_mae
+    normalized max absolute error(NMAE)
+
+"""
+
 from typing import Any
 
+#                                                                       Modules
+# =============================================================================
+# third party modules
 import numpy as np
+
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
 def mean_log_likelihood_value(y_true: np.ndarray,
