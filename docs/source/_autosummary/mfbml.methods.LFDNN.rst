@@ -23,6 +23,7 @@ mfbml.methods.LFDNN
       ~LFDNN.change_loss
       ~LFDNN.change_optimizer
       ~LFDNN.children
+      ~LFDNN.compile
       ~LFDNN.cpu
       ~LFDNN.cuda
       ~LFDNN.double

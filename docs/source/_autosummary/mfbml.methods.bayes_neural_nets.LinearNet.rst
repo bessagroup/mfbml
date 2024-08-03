@@ -1,4 +1,4 @@
-mfbml.methods.bayes\_neural\_nets.LinearNet
+﻿mfbml.methods.bayes\_neural\_nets.LinearNet
 ===========================================
 
 .. currentmodule:: mfbml.methods.bayes_neural_nets
@@ -21,6 +21,7 @@ mfbml.methods.bayes\_neural\_nets.LinearNet
       ~LinearNet.bfloat16
       ~LinearNet.buffers
       ~LinearNet.children
+      ~LinearNet.compile
       ~LinearNet.cpu
       ~LinearNet.cuda
       ~LinearNet.double

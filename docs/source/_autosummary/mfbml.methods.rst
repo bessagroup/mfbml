@@ -1,4 +1,4 @@
-mfbml.methods
+﻿mfbml.methods
 =============
 
 .. automodule:: mfbml.methods
@@ -23,6 +23,7 @@ mfbml.methods
       DNNBNN
       DNNLinearRegressionBNN
       KernelRidgeLinearGaussianProcess
+      KernelRidgeRegression
       LFDNN
       RBF
    

@@ -1,4 +1,4 @@
-mfbml.methods.bayes\_neural\_nets.SGLD
+﻿mfbml.methods.bayes\_neural\_nets.SGLD
 ======================================
 
 .. currentmodule:: mfbml.methods.bayes_neural_nets
@@ -19,6 +19,10 @@ mfbml.methods.bayes\_neural\_nets.SGLD
       ~SGLD.add_param_group
       ~SGLD.load_state_dict
       ~SGLD.profile_hook_step
+      ~SGLD.register_load_state_dict_post_hook
+      ~SGLD.register_load_state_dict_pre_hook
+      ~SGLD.register_state_dict_post_hook
+      ~SGLD.register_state_dict_pre_hook
       ~SGLD.register_step_post_hook
       ~SGLD.register_step_pre_hook
       ~SGLD.state_dict
@@ -28,6 +32,13 @@ mfbml.methods.bayes\_neural\_nets.SGLD
    
 
    
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SGLD.OptimizerPostHook
+      ~SGLD.OptimizerPreHook
    
    
 

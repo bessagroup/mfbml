@@ -1,4 +1,4 @@
-mfbml.methods.bayes\_neural\_nets.Tensor
+﻿mfbml.methods.bayes\_neural\_nets.Tensor
 ========================================
 
 .. currentmodule:: mfbml.methods.bayes_neural_nets
@@ -168,6 +168,7 @@ mfbml.methods.bayes\_neural\_nets.Tensor
       ~Tensor.digamma
       ~Tensor.digamma_
       ~Tensor.dim
+      ~Tensor.dim_order
       ~Tensor.dist
       ~Tensor.div
       ~Tensor.div_
@@ -354,6 +355,7 @@ mfbml.methods.bayes\_neural\_nets.Tensor
       ~Tensor.minimum
       ~Tensor.mm
       ~Tensor.mode
+      ~Tensor.module_load
       ~Tensor.moveaxis
       ~Tensor.movedim
       ~Tensor.msort
@@ -391,6 +393,7 @@ mfbml.methods.bayes\_neural\_nets.Tensor
       ~Tensor.nextafter
       ~Tensor.nextafter_
       ~Tensor.nonzero
+      ~Tensor.nonzero_static
       ~Tensor.norm
       ~Tensor.normal_
       ~Tensor.not_equal
@@ -429,6 +432,7 @@ mfbml.methods.bayes\_neural\_nets.Tensor
       ~Tensor.record_stream
       ~Tensor.refine_names
       ~Tensor.register_hook
+      ~Tensor.register_post_accumulate_grad_hook
       ~Tensor.reinforce
       ~Tensor.relu
       ~Tensor.relu_
@@ -483,6 +487,7 @@ mfbml.methods.bayes\_neural\_nets.Tensor
       ~Tensor.sinh
       ~Tensor.sinh_
       ~Tensor.size
+      ~Tensor.slice_inverse
       ~Tensor.slice_scatter
       ~Tensor.slogdet
       ~Tensor.smm
@@ -603,18 +608,22 @@ mfbml.methods.bayes\_neural\_nets.Tensor
       ~Tensor.is_meta
       ~Tensor.is_mkldnn
       ~Tensor.is_mps
+      ~Tensor.is_mtia
       ~Tensor.is_nested
       ~Tensor.is_ort
       ~Tensor.is_quantized
       ~Tensor.is_sparse
       ~Tensor.is_sparse_csr
       ~Tensor.is_vulkan
+      ~Tensor.is_xla
       ~Tensor.is_xpu
+      ~Tensor.itemsize
       ~Tensor.layout
       ~Tensor.mH
       ~Tensor.mT
       ~Tensor.name
       ~Tensor.names
+      ~Tensor.nbytes
       ~Tensor.ndim
       ~Tensor.output_nr
       ~Tensor.real

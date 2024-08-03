@@ -1,4 +1,4 @@
-mfbml.inference.sghmc
+﻿mfbml.inference.sghmc
 =====================
 
 .. automodule:: mfbml.inference.sghmc

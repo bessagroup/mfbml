@@ -1,4 +1,4 @@
-mfbml.methods.deep\_neural\_nets.MLP
+﻿mfbml.methods.deep\_neural\_nets.MLP
 ====================================
 
 .. currentmodule:: mfbml.methods.deep_neural_nets
@@ -21,6 +21,7 @@ mfbml.methods.deep\_neural\_nets.MLP
       ~MLP.bfloat16
       ~MLP.buffers
       ~MLP.children
+      ~MLP.compile
       ~MLP.cpu
       ~MLP.cuda
       ~MLP.double

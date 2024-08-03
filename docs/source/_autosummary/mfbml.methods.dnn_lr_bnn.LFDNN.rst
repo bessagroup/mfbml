@@ -1,4 +1,4 @@
-mfbml.methods.dnn\_lr\_bnn.LFDNN
+﻿mfbml.methods.dnn\_lr\_bnn.LFDNN
 ================================
 
 .. currentmodule:: mfbml.methods.dnn_lr_bnn
@@ -23,6 +23,7 @@ mfbml.methods.dnn\_lr\_bnn.LFDNN
       ~LFDNN.change_loss
       ~LFDNN.change_optimizer
       ~LFDNN.children
+      ~LFDNN.compile
       ~LFDNN.cpu
       ~LFDNN.cuda
       ~LFDNN.double

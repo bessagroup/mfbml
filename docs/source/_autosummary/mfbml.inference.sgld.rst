@@ -1,4 +1,4 @@
-mfbml.inference.sgld
+﻿mfbml.inference.sgld
 ====================
 
 .. automodule:: mfbml.inference.sgld

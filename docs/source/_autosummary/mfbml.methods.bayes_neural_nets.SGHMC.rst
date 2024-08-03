@@ -1,4 +1,4 @@
-mfbml.methods.bayes\_neural\_nets.SGHMC
+﻿mfbml.methods.bayes\_neural\_nets.SGHMC
 =======================================
 
 .. currentmodule:: mfbml.methods.bayes_neural_nets
@@ -19,6 +19,10 @@ mfbml.methods.bayes\_neural\_nets.SGHMC
       ~SGHMC.add_param_group
       ~SGHMC.load_state_dict
       ~SGHMC.profile_hook_step
+      ~SGHMC.register_load_state_dict_post_hook
+      ~SGHMC.register_load_state_dict_pre_hook
+      ~SGHMC.register_state_dict_post_hook
+      ~SGHMC.register_state_dict_pre_hook
       ~SGHMC.register_step_post_hook
       ~SGHMC.register_step_pre_hook
       ~SGHMC.state_dict
@@ -33,6 +37,8 @@ mfbml.methods.bayes\_neural\_nets.SGHMC
 
    .. autosummary::
    
+      ~SGHMC.OptimizerPostHook
+      ~SGHMC.OptimizerPreHook
       ~SGHMC.name
    
    

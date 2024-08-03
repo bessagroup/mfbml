@@ -1,4 +1,4 @@
-mfbml.methods.deep\_neural\_nets.LFDNN
+﻿mfbml.methods.deep\_neural\_nets.LFDNN
 ======================================
 
 .. currentmodule:: mfbml.methods.deep_neural_nets
@@ -23,6 +23,7 @@ mfbml.methods.deep\_neural\_nets.LFDNN
       ~LFDNN.change_loss
       ~LFDNN.change_optimizer
       ~LFDNN.children
+      ~LFDNN.compile
       ~LFDNN.cpu
       ~LFDNN.cuda
       ~LFDNN.double

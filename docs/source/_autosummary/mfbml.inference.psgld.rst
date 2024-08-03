@@ -1,4 +1,4 @@
-mfbml.inference.psgld
+﻿mfbml.inference.psgld
 =====================
 
 .. automodule:: mfbml.inference.psgld

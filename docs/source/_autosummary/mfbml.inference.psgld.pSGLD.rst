@@ -19,6 +19,10 @@ mfbml.inference.psgld.pSGLD
       ~pSGLD.add_param_group
       ~pSGLD.load_state_dict
       ~pSGLD.profile_hook_step
+      ~pSGLD.register_load_state_dict_post_hook
+      ~pSGLD.register_load_state_dict_pre_hook
+      ~pSGLD.register_state_dict_post_hook
+      ~pSGLD.register_state_dict_pre_hook
       ~pSGLD.register_step_post_hook
       ~pSGLD.register_step_pre_hook
       ~pSGLD.state_dict
@@ -28,6 +32,13 @@ mfbml.inference.psgld.pSGLD
    
 
    
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~pSGLD.OptimizerPostHook
+      ~pSGLD.OptimizerPreHook
    
    
 
