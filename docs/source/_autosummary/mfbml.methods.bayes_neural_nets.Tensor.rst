@@ -605,12 +605,12 @@
       ~Tensor.is_cuda
       ~Tensor.is_ipu
       ~Tensor.is_leaf
+      ~Tensor.is_maia
       ~Tensor.is_meta
       ~Tensor.is_mkldnn
       ~Tensor.is_mps
       ~Tensor.is_mtia
       ~Tensor.is_nested
-      ~Tensor.is_ort
       ~Tensor.is_quantized
       ~Tensor.is_sparse
       ~Tensor.is_sparse_csr
