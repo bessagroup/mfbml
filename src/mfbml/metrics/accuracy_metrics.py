@@ -1,24 +1,47 @@
-# this file contains the accuracy metrics for the gpr model and MF-RBF-GPR for
-# evaluating the performance of the model. The accuracy metrics are the log
-# marginal likelihood.
+
+# ------------------ Beginning of Reference Python Module ---------------------
+"""This module contains functions to evaluate the performance of the model.
+
+Functions
+---------
+mean_log_likelihood_value
+    mean log likelihood value for Bayesian model
+normalized_rmse
+    normalized root mean squared error(NRMSE)
+normalized_mae
+    normalized max absolute error(NMAE)
+
+"""
+
 from typing import Any
 
+#                                                                       Modules
+# =============================================================================
+# third party modules
 import numpy as np
+
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
 def mean_log_likelihood_value(y_true: np.ndarray,
                               y_pred_mean: np.ndarray,
                               y_pred_std: np.ndarray) -> float | Any:
-    """mean log likelihood value for Bayesian machine learning model
+    """mean log likelihood value for Bayesian model
 
     Parameters
     ----------
     y_true : np.ndarray
         true values without noise
     y_pred_mean : np.ndarray
-        predicted mean values from bayesian machine learning model
+        predicted mean values from bayesian model
     y_pred_std : np.ndarray
-        predicted standard deviation values from bayesian machine learning model
+        predicted standard deviation values from Bayesian model
 
     Returns
     -------
@@ -49,7 +72,8 @@ def normalized_rmse(y_true: np.ndarray,
         normalized root mean squared error
     """
 
-    return np.sqrt(np.mean((y_true - y_pred_mean)**2)) / np.mean(np.abs(y_true))
+    return np.sqrt(np.mean((y_true - y_pred_mean)**2)) \
+        / np.mean(np.abs(y_true))
 
 
 def normalized_mae(y_true: np.ndarray,

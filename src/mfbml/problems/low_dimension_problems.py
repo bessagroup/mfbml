@@ -1,7 +1,14 @@
-# this script is used prepare problem for noiseless cases, the multi-fidelity
-# problem problems are originally from the repository:
-# https://github.com/JiaxiangYi96/mfpml.git
 
+# ------------------ Beginning of Reference Python Module ---------------------
+"""This script is used prepare problem for low-dimensional problems, the
+multi-fidelity problem problems are originally from the repository:
+https: // github.com/JiaxiangYi96/mfpml.git
+
+"""
+
+#                                                                       Modules
+# =============================================================================
+# third party modules
 from mfpml.problems.mf_functions import (Forrester_1a, Forrester_1b,
                                          Forrester_1c, MultiFidelityFunctions,
                                          mf_Bohachevsky, mf_Booth, mf_Borehole,
@@ -9,8 +16,13 @@ from mfpml.problems.mf_functions import (Forrester_1a, Forrester_1b,
                                          mf_Hartman6, mf_Himmelblau,
                                          mf_Park91A, mf_Park91B, mf_Sixhump)
 
-#                                                             register problems
-# =========================================================================== #
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
 def register_problem(problem_name: str) -> MultiFidelityFunctions:
@@ -18,7 +30,7 @@ def register_problem(problem_name: str) -> MultiFidelityFunctions:
 
     Parameters
     ----------
-    problem_name : str
+    problem_name: str
         problem name
     """
 

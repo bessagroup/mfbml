@@ -1,11 +1,25 @@
-# this script is used to generate the method sets for the data scarce noiseless
-# problem sets
-# ---
-# Created Date: 2021-09-09 15:06:24
+# ------------------ Beginning of Reference Python Module ---------------------
+""" Module for Single-fidelity Bayesian Neural Networks
 
-# third party library
+This module contains the classes and functions for training single-fidelity
+Bayesian Neural Networks (BNNs) using PyTorch.
+
+Classes
+-------
+LinearNet
+    A class for defining a linear neural network architecture.
+BNNWrapper
+    A wrapper class for training a Bayesian Neural Network (BNN) using PyTorch.
+
+"""
+
+#
+#                                                                       Modules
+# =============================================================================
+# standard library modules
 from typing import Any
 
+# third party modules
 import numpy as np
 from mfpml.models.co_kriging import CoKriging
 from mfpml.models.gaussian_process import \
@@ -14,11 +28,20 @@ from mfpml.models.hierarchical_kriging import HierarchicalKriging
 from mfpml.models.scale_kriging import ScaledKriging
 
 # local library
-from mfbml.methods.mf_rbf_gpr import MFRBFGPR
-from mfbml.methods.mf_rbf_kriging import MFRBFKriging
+from mfbml.methods.krr_lr_gpr import \
+    KernelRidgeLinearGaussianProcess as MFRBFGPR
+
+#
+#                                                          Authorship & Credits
+# =============================================================================
+__author__ = 'J.Yi@tudelft.nl'
+__credits__ = ['Jiaxiang Yi']
+__status__ = 'Stable'
+# =============================================================================
 
 
-def get_method(method_name: str, design_space: np.ndarray) -> Any:
+def get_method(method_name: str,
+               design_space: np.ndarray) -> Any:
     """get and initialize a method for the data scarce noiseless problem sets
 
     Parameters
@@ -40,15 +63,25 @@ def get_method(method_name: str, design_space: np.ndarray) -> Any:
     """
 
     if method_name == 'kriging':
-        return GaussianProcess(design_space=design_space, optimizer_restart=10, noise_prior=0.0)
+        return GaussianProcess(design_space=design_space,
+                               optimizer_restart=10,
+                               noise_prior=0.0)
     elif method_name == 'hk':
-        return HierarchicalKriging(design_space=design_space, noise_prior=0.0,  optimizer_restart=10)
+        return HierarchicalKriging(design_space=design_space,
+                                   noise_prior=0.0,
+                                   optimizer_restart=10)
     elif method_name == 'ck':
-        return CoKriging(design_space=design_space, noise_prior=0.0, optimizer_restart=10)
+        return CoKriging(design_space=design_space,
+                         noise_prior=0.0,
+                         optimizer_restart=10)
     elif method_name == 'mf_rbf':
-        return MFRBFKriging(design_space=design_space, optimizer_restart=10)
+        return MFRBFGPR(design_space=design_space,
+                        noise_prior=0.0,
+                        optimizer_restart=10)
     elif method_name == 'mf_scale':
-        return ScaledKriging(design_space=design_space,  noise_prior=0.0, optimizer_restart=10)
+        return ScaledKriging(design_space=design_space,
+                             noise_prior=0.0,
+                             optimizer_restart=10)
     else:
         raise ValueError('method name not found')
 

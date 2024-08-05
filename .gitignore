@@ -25,7 +25,7 @@
 *.log
 *.sql
 *.sqlite
-
+slurm*
 # OS generated files #
 ######################
 .DS_Store
@@ -83,4 +83,5 @@ __pycache__/
 
 # folders
 coverage_html_report/
-example/
+examples/
+*_final_backup/

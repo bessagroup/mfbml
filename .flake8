@@ -11,6 +11,9 @@
 extend-exclude =
   docs/
   tests/
+  studies/
+  tutorial/
+  examples/
 
 # <<< UPDATE ACCORDING WITH YOUR PYTHON PROJECT
 
@@ -49,7 +52,7 @@ extend-ignore = E226, E3, E731, C901
 # E704 : Multiple statements on one line (def)
 # W504 : Line break after binary operator
 # W505 : Doc line too long (82 > 79 characters) 
-extend-select = E241, E242, E704, W504, W505
+extend-select = E241, E242, E704, W505
 
 # Ignore all errors F401 ('imported but unused') and E402 ('module level import
 # not at top of file') in __init__.py files
