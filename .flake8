@@ -13,7 +13,7 @@ extend-exclude =
   tests/
   studies/
   tutorial/
-  examples/
+  _final_backup/
 
 # <<< UPDATE ACCORDING WITH YOUR PYTHON PROJECT
 
