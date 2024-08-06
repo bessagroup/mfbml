@@ -56,18 +56,24 @@ In the particular case of a research environment, `mfbml is designed to easily a
 
 ```
 https://github.com/JiaxiangYi96/mfbml.git
+cd mfbml
+```
+(2) create a new conda environment with python version 3.10 
+```
+conda create -n mfbml_env python=3.10
+conda activate mfbml_env
+```
+(3). install dependencies first (a git repo [mfpml](https://github.com/JiaxiangYi96/mfpml) with branch `yaga` and [pytorch](https://pytorch.org/get-started/locally/) with `cpu` installation)
+
+```
+pip install -r requirements.txt 
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
-(2). go to the local folder where you cloned the repo, and pip install it with editable mode
+(4). go to the local folder where you cloned the repo, and pip install it with editable mode
 
 ```
 pip install --verbose --no-build-isolation --editable .
-```
-
-(3). install dependencies
-
-```
-pip install -r requirements.txt
 ```
 
 ---
