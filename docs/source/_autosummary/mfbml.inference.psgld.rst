@@ -1,33 +1,45 @@
-﻿mfbml.inference.psgld
+﻿mfbml.inference.pSGLD
 =====================
 
-.. automodule:: mfbml.inference.psgld
-  
-   
-   
-   
+.. currentmodule:: mfbml.inference
+
+.. autoclass:: pSGLD
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
 
    
    
-   
-
-   
-   
-   .. rubric:: Classes
+   .. rubric:: List of Public Methods
 
    .. autosummary::
-      :toctree:
-      :template: custom-class-template.rst
+      :nosignatures:
    
-      Optimizer
-      Variable
-      pSGLD
+      ~pSGLD.add_param_group
+      ~pSGLD.load_state_dict
+      ~pSGLD.profile_hook_step
+      ~pSGLD.register_load_state_dict_post_hook
+      ~pSGLD.register_load_state_dict_pre_hook
+      ~pSGLD.register_state_dict_post_hook
+      ~pSGLD.register_state_dict_pre_hook
+      ~pSGLD.register_step_post_hook
+      ~pSGLD.register_step_pre_hook
+      ~pSGLD.state_dict
+      ~pSGLD.step
+      ~pSGLD.zero_grad
    
    
 
    
    
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~pSGLD.OptimizerPostHook
+      ~pSGLD.OptimizerPreHook
+   
    
 
-
-
+   .. rubric:: Methods
