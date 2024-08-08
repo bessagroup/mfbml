@@ -192,8 +192,9 @@ class DNNBNN:
 
         Returns
         -------
-        _type_
-            _description_
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+            high fidelity mean, epistemic uncertainty, total uncertainty,
+            aleatoric uncertainty
         """
         # get the low-fidelity model prediction
         lf_y = self.predict_lf(X, output_format="torch")

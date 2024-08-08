@@ -21,13 +21,13 @@ function_two
 #                                                                       Modules
 # =============================================================================
 # standard library
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 # third party modules
 import numpy as np
 import torch
+from torch import Tensor
 from scipy.optimize import minimize
-
 # local modules
 from mfbml.methods.bayes_neural_nets import BNNWrapper
 from mfbml.methods.deep_neural_nets import LFDNN
@@ -252,7 +252,9 @@ class DNNLinearRegressionBNN:
                             verbose=hf_train_config["print_info"],
                             burn_in_epochs=hf_train_config["burn_in_epochs"])
 
-    def predict(self, X: torch.Tensor):
+    def predict(self,
+                X: Tensor) -> Tuple[np.ndarray, np.ndarray,
+                                    np.ndarray, np.ndarray]:
         """predict the high fidelity output of the MF-DNN-BNN framework
 
         Parameters
@@ -260,6 +262,11 @@ class DNNLinearRegressionBNN:
         X : torch.Tensor
             test input data
 
+        Returns
+        -------
+        Tuple
+            predictive mean, epistemic uncertainty, total uncertainty,
+            aleatoric uncertainty
         """
 
         if self.discrepancy_normalization == "diff":
