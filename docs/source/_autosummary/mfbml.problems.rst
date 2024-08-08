@@ -50,6 +50,6 @@ mfbml.problems
    :recursive:
 
    high_dimension_problems
-   illutrative_problems
+   illustrative_problems
    low_dimension_problems
 

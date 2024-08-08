@@ -80,10 +80,10 @@ pip install --verbose --no-build-isolation --editable .
 
 **Illustrative examples**
 
-1. Kernel Ridge Regression + Linear Transfer-learning + Gaussian Process Regression [Notebook](https://github.com/bessagroup/mfbml/blob/main/tutorials/krr_lr_gpr_illustration.ipynb)
+1. Kernel Ridge Regression + Linear Transfer-learning + Gaussian Process Regression [Notebook](https://github.com/bessagroup/mfbml/blob/main/tutorials/krr_lr_gpr_illustration_demo.ipynb)
 
 
-2. Deep Neural Network + Linear Transfer-learning + Bayesian Neural Network [Notebook](https://github.com/bessagroup/mfbml/blob/main/tutorials/mf_dnn_bnn_showcase.ipynb)
+2. Deep Neural Network + Linear Transfer-learning + Bayesian Neural Network [Notebook](https://github.com/bessagroup/mfbml/blob/main/tutorials/dnn_lr_bnn_demo.ipynb)
 
 3. More illustrative examples shown in the paper can be found in the [studies](https://github.com/bessagroup/mfbml/tree/main/studies) folder.
 

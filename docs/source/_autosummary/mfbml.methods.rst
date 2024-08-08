@@ -1,4 +1,4 @@
-﻿mfbml.methods
+mfbml.methods
 =============
 
 .. automodule:: mfbml.methods

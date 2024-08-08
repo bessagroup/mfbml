@@ -1,4 +1,4 @@
-﻿mfbml.methods.bayes\_neural\_nets.pSGLD
+mfbml.methods.bayes\_neural\_nets.pSGLD
 =======================================
 
 .. currentmodule:: mfbml.methods.bayes_neural_nets

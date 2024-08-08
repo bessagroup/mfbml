@@ -1,4 +1,4 @@
-﻿mfbml.methods.deep\_neural\_nets.MLP
+mfbml.methods.deep\_neural\_nets.MLP
 ====================================
 
 .. currentmodule:: mfbml.methods.deep_neural_nets

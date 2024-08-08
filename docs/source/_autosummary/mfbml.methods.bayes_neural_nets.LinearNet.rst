@@ -1,4 +1,4 @@
-﻿mfbml.methods.bayes\_neural\_nets.LinearNet
+mfbml.methods.bayes\_neural\_nets.LinearNet
 ===========================================
 
 .. currentmodule:: mfbml.methods.bayes_neural_nets

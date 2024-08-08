@@ -1,4 +1,4 @@
-﻿mfbml.methods.dnn\_bnn.LFDNN
+mfbml.methods.dnn\_bnn.LFDNN
 ============================
 
 .. currentmodule:: mfbml.methods.dnn_bnn

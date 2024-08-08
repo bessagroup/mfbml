@@ -1,7 +1,7 @@
-mfbml.problems.illutrative\_problems
-====================================
+mfbml.problems.illustrative\_problems
+=====================================
 
-.. automodule:: mfbml.problems.illutrative_problems
+.. automodule:: mfbml.problems.illustrative_problems
   
    
    

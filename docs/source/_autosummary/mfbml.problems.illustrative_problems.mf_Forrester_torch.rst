@@ -1,7 +1,7 @@
-mfbml.problems.illutrative\_problems.mf\_Forrester\_torch
-=========================================================
+mfbml.problems.illustrative\_problems.mf\_Forrester\_torch
+==========================================================
 
-.. currentmodule:: mfbml.problems.illutrative_problems
+.. currentmodule:: mfbml.problems.illustrative_problems
 
 .. autoclass:: mf_Forrester_torch
    :members:
