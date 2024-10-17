@@ -294,7 +294,8 @@ class BNNWrapper:
                 self.lr_record.append(self.optimizer.param_groups[0]['lr'])
 
     def predict(self,
-                X: Tensor) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+                X: Tensor,
+                save_ppd: bool = False) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
         """predict the output of the Bayesian Neural Network
 
         Returns
@@ -312,6 +313,9 @@ class BNNWrapper:
             pred = net(X, training=False).data.numpy()
             responses.append(pred)
             responses_weighted.append(pred_weighted)
+        
+        if save_ppd:
+            self.responses = responses
 
         # get the mean and variance of the responses
         pred_mean = (np.array(responses_weighted).sum(axis=0)
