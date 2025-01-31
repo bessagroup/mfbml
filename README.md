@@ -63,7 +63,7 @@ cd mfbml
 conda create -n mfbml_env python=3.10
 conda activate mfbml_env
 ```
-(3). install dependencies first (a git repo [mfpml](https://github.com/JiaxiangYi96/mfpml) with branch `yaga` and [pytorch](https://pytorch.org/get-started/locally/) with `cpu` installation)
+(3). install dependencies first (a git repo [mfpml](https://github.com/JiaxiangYi96/mfpml) with branch `main` and [pytorch](https://pytorch.org/get-started/locally/) with `cpu` installation)
 
 ```
 pip install -r requirements.txt 
