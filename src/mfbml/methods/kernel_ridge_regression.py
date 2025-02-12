@@ -86,7 +86,7 @@ class KernelRidgeRegression:
     def train(self,
               X: np.ndarray,
               Y: np.ndarray,
-              portion_test: float = 0.2) -> None:
+              portion_test: float = 0.1) -> None:
         """Train the KRR model
 
         Parameters

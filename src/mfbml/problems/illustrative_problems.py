@@ -34,6 +34,7 @@ class mf_Forrester:
     num_dim: int = 1
     num_obj: int = 1
     design_space: np.ndarray = np.array([[0.0, 1.0]])
+    input_domain: np.ndarray = np.array([[0.0, 1.0]])
     optimum: float = -6.020740
     optimum_scheme: list = [0.757248757841856]
 

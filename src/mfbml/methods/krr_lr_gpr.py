@@ -56,6 +56,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
         lf_model: KernelRidgeRegression = None,
         lf_poly_order: str = "linear",
         seed: int = 42,
+        lf_portion: float = 0.2
     ) -> None:
         """Initialize the model of KRR + linear transfer model + GPR
 
@@ -100,6 +101,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
                                   noise_data=True,
                                   optimizer_restart=optimizer_restart,
                                   seed=seed)
+        self.lf_portion = lf_portion
 
     def train(self, X: List, Y: List) -> None:
         """Train the hierarchical gaussian process model
@@ -128,7 +130,7 @@ class KernelRidgeLinearGaussianProcess(ABC):
         self.sample_yl_scaled = (self.sample_yl - self.yh_mean) / self.yh_std
         # rbf surrogate model would normalize the inputs directly
         start_time = time.time()
-        self.lf_model.train(X[1], Y[1])
+        self.lf_model.train(X[1], Y[1], portion_test=self.lf_portion)
         lf_train_time = time.time()
         # prediction of low-fidelity at high-fidelity locations
         self.f = self._basis_function(self.sample_xh,
