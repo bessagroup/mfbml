@@ -35,6 +35,10 @@ def main():
     test_lf3_responses_noiseless = func.lf3(test_samples, noise_lf=0.0)
     # noise responses
     test_hf_responses = func.hf(test_samples, noise_hf=0.05)
+    # test lf responses
+    test_lf1_responses = func.lf1(test_samples, noise_lf=0.05)
+    test_lf2_responses = func.lf2(test_samples, noise_lf=0.05)
+    test_lf3_responses = func.lf3(test_samples, noise_lf=0.05)
 
     # dataset of lf1 and hf
     responses_lf1 = [hf_responses, lf1_responses]
@@ -78,9 +82,12 @@ def main():
                  "test_samples": test_samples,
                  "test_hf_responses": test_hf_responses,
                  "test_hf_responses_noiseless": test_hf_responses_noiseless,
-                 "test_lf1_responses": test_lf1_responses_noiseless,
-                 "test_lf2_responses": test_lf2_responses_noiseless,
-                 "test_lf3_responses": test_lf3_responses_noiseless,
+                 "test_lf1_responses_noiseless": test_lf1_responses_noiseless,
+                 "test_lf2_responses_noiseless": test_lf2_responses_noiseless,
+                 "test_lf3_responses_noiseless": test_lf3_responses_noiseless,
+                 "test_lf1_responses": test_lf1_responses,
+                 "test_lf2_responses": test_lf2_responses,
+                 "test_lf3_responses": test_lf3_responses,
                  "correlation": [pearsonr(test_hf_responses_noiseless.flatten(),
                                           test_lf1_responses_noiseless.flatten()),
                                  pearsonr(test_hf_responses_noiseless.flatten(),

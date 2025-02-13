@@ -351,7 +351,7 @@ class BNNWrapper:
               (self.nll_loss_train[epoch],
                self.prior_loss_train[epoch],
                self.total_loss_train[epoch]))
-        print("noise: %2.3f" % (noise_p))
+        print(f"noise: {noise_p}")
 
     @staticmethod
     def _nog_likelihood_function(pred: torch.Tensor,
@@ -377,7 +377,9 @@ class BNNWrapper:
             negative log likelihood
 
         """
-        sigma = torch.Tensor([sigma])
+        if not isinstance(sigma, torch.Tensor):
+            sigma = torch.Tensor([sigma])
+
         exponent = -0.5*(pred - real)**2/sigma**2
         log_coef = -num_dim*0.5*torch.log(sigma**2)
 
