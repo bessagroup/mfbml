@@ -270,7 +270,7 @@ class BNNWrapper:
             nll_loss = self._nog_likelihood_function(
                 pred=pred,
                 real=Y,
-                sigma=self.sigma,  # type: ignore
+                sigma=self.sigma,
                 num_dim=self.network.out_features)
 
             # total loss

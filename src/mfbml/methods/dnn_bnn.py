@@ -349,8 +349,8 @@ class DNNBNN:
         torch.Tensor
             normalized output data of the low-fidelity model
         """
-        self.yl_mean = torch.mean(Y)
-        self.yl_std = torch.std(Y)
+        self.yl_mean = torch.mean(Y, axis=0)
+        self.yl_std = torch.std(Y, axis=0)
         Y = (Y - self.yl_mean) / self.yl_std
 
         return Y
@@ -368,8 +368,8 @@ class DNNBNN:
         torch.Tensor
             normalized output data of the high-fidelity model
         """
-        self.yh_mean = torch.mean(Y)
-        self.yh_std = torch.std(Y)
+        self.yh_mean = torch.mean(Y, axis=0)
+        self.yh_std = torch.std(Y, axis=0)
         Y = (Y - self.yh_mean) / self.yh_std
 
         return Y
