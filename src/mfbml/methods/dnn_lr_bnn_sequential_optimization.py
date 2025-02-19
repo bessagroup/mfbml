@@ -195,68 +195,10 @@ class DNNLinearRegressionBNN:
         if self.beta_optimize:
             self.beta = self._beta_optimize()
 
-        # if self.discrepancy_normalization == "hf":
-        #     # normalize the hf responses (not used yet)
-        #     self.hf_responses_scaled = self.normalize_hf_output(
-        #         self.hf_responses)
-        #     # scale the noise for HF model
-        #     self.hf_model.sigma = self.hf_model.sigma / self.yh_std.numpy()
-        #     # scale it to the hf scale
-        #     # get the difference between the hf and lf samples
-        #     if self.lf_order == 1:
-        #         dis_hf_lf_samples = self.hf_responses - \
-        #             self.beta[1] * lf_hf_samples - self.beta[0]
-        #     elif self.lf_order == 2:
-        #         dis_hf_lf_samples = self.hf_responses - \
-        #             self.beta[2] * lf_hf_samples**2 - \
-        #             self.beta[1] * lf_hf_samples - self.beta[0]
-        #     elif self.lf_order == 3:
-        #         dis_hf_lf_samples = self.hf_responses - \
-        #             self.beta[3] * lf_hf_samples**3 - \
-        #             self.beta[2] * lf_hf_samples**2 - \
-        #             self.beta[1] * lf_hf_samples - self.beta[0]
-        #     else:
-        #         raise ValueError(
-        #             "The order of the low-fidelity model is not supported")
-        #     # transfer to torch tensor
-        #     dis_hf_lf_samples = torch.Tensor(dis_hf_lf_samples)
-        #     # scale the discrepancy according to hf
-        #     dis_hf_lf_samples = (dis_hf_lf_samples-self.yh_mean)/self.yh_std
-
-        # elif self.discrepancy_normalization == "diff":
-        #     # get discrepancy between HF and LF samples in the original scale
-        #     if self.lf_order == 1:
-        #         dis_hf_lf_samples = self.hf_responses - \
-        #             self.beta[1]*lf_hf_samples - self.beta[0]
-        #     elif self.lf_order == 2:
-        #         dis_hf_lf_samples = self.hf_responses - \
-        #             self.beta[2]*lf_hf_samples**2 - \
-        #             self.beta[1]*lf_hf_samples - self.beta[0]
-        #     elif self.lf_order == 3:
-        #         dis_hf_lf_samples = self.hf_responses - \
-        #             self.beta[3]*lf_hf_samples**3 - \
-        #             self.beta[2]*lf_hf_samples**2 - \
-        #             self.beta[1]*lf_hf_samples - self.beta[0]
-        #     else:
-        #         raise ValueError(
-        #             "The order of the low-fidelity model is not supported")
-
-        #     dis_hf_lf_samples = self.normalize_diff_output(
-        #         dis_hf_lf_samples)
-        #     dis_hf_lf_samples = torch.Tensor(dis_hf_lf_samples)
-        #     self.hf_model.sigma = self.hf_model.sigma / self.diff_std.numpy()
-
-        # # train the high-fidelity model (normalized discrepancy)
-        # self.train_hf_model(X=self.hf_samples_scaled,
-        #                     Y=dis_hf_lf_samples,
-        #                     num_epochs=hf_train_config["num_epochs"],
-        #                     sample_freq=hf_train_config["sample_freq"],
-        #                     verbose=hf_train_config["print_info"],
-        #                     burn_in_epochs=hf_train_config["burn_in_epochs"])
         beta_tensor = torch.tensor(self.beta,
                                    dtype=lf_hf_samples.dtype,
                                    device=lf_hf_samples.device)
-        print(beta_tensor)
+        print(f"beta: {beta_tensor[0]}")
 
         if self.discrepancy_normalization == "hf":
             # Normalize high-fidelity responses
@@ -341,7 +283,7 @@ class DNNLinearRegressionBNN:
         lf_y = self.predict_lf(X, output_format="numpy")
 
         # Normalize inputs for high-fidelity model prediction
-        x_scale = self.normalize_inputs(X)
+        x_scale = self.normalize_inputs(X.clone())
         # Obtain high-fidelity model prediction (discrepancy prediction)
         hy_pred, epistemic, total_unc, aleatoric = self.hf_model.predict(
             x_scale)
@@ -357,14 +299,15 @@ class DNNLinearRegressionBNN:
         # Compute the polynomial correction using the β matrix.
         # The correction is defined as:
         #   correction = β[0] + β[1]*lf_y + β[2]*(lf_y**2) + ... + β[lf_order]*(lf_y**lf_order)
+
         if self.lf_order == 1:
-            correction = self.beta[1] * lf_y + self.beta[0]
+            correction = self.beta[1, :] * lf_y + self.beta[0, :]
         elif self.lf_order == 2:
-            correction = self.beta[2] * \
-                (lf_y ** 2) + self.beta[1] * lf_y + self.beta[0]
+            correction = self.beta[2, :] * \
+                (lf_y ** 2) + self.beta[1, :] * lf_y + self.beta[0, :]
         elif self.lf_order == 3:
-            correction = self.beta[3] * (lf_y ** 3) + self.beta[2] * \
-                (lf_y ** 2) + self.beta[1] * lf_y + self.beta[0]
+            correction = self.beta[3, :] * (lf_y ** 3) + self.beta[2, :] * \
+                (lf_y ** 2) + self.beta[1, :] * lf_y + self.beta[0, :]
         else:
             raise ValueError(
                 "The order of the low-fidelity model is not supported")
@@ -384,67 +327,6 @@ class DNNLinearRegressionBNN:
 
         return y, epistemic, total_unc, aleatoric
 
-        # if self.discrepancy_normalization == "diff":
-        #     # get the low-fidelity model prediction
-        #     lf_y = self.predict_lf(X, output_format="numpy")
-        #     # scale the input data
-        #     x_scale = self.normalize_inputs(X)
-        #     # get the high-fidelity model prediction
-        #     hy_pred, epistemic, total_unc, aleatoric = self.hf_model.predict(
-        #         x_scale)
-
-        #     # scale the discrepancy to the original scale
-        #     hy_pred = hy_pred * self.diff_std.numpy() + self.diff_mean.numpy()
-
-        #     # get the final prediction y = beta1*lf_y + hy_pred + beta0
-        #     if self.lf_order == 1:
-        #         y = self.beta[1]*lf_y + hy_pred + self.beta[0]
-        #     elif self.lf_order == 2:
-        #         y = self.beta[2]*lf_y**2 + self.beta[1] * \
-        #             lf_y + hy_pred + self.beta[0]
-        #     elif self.lf_order == 3:
-        #         y = self.beta[3]*lf_y**3 + self.beta[2]*lf_y**2 + \
-        #             self.beta[1]*lf_y + hy_pred + self.beta[0]
-        #     else:
-        #         raise ValueError(
-        #             "The order of the low-fidelity model is not supported")
-
-        #     # uncertainties
-        #     epistemic = epistemic * self.diff_std.numpy()
-        #     total_unc = total_unc * self.diff_std.numpy()
-        #     aleatoric = aleatoric * self.diff_std.numpy()
-
-        # elif self.discrepancy_normalization == "hf":
-
-        #     # get the low-fidelity model prediction
-        #     lf_y = self.predict_lf(X, output_format="numpy")
-        #     # scale the input data
-        #     x_scale = self.normalize_inputs(X)
-        #     # get the high-fidelity model prediction
-        #     hy_pred, epistemic, total_unc, aleatoric = self.hf_model.predict(
-        #         x_scale)
-        #     # scale the discrepancy to the original scale
-        #     hy_pred = hy_pred * self.yh_std.numpy() + self.yh_mean.numpy()
-
-        #     # get the final prediction at the scaled scale
-        #     if self.lf_order == 1:
-        #         y = self.beta[1]*lf_y + hy_pred + self.beta[0]
-        #     elif self.lf_order == 2:
-        #         y = self.beta[2]*lf_y**2 + \
-        #             self.beta[1]*lf_y + hy_pred + self.beta[0]
-        #     elif self.lf_order == 3:
-        #         y = self.beta[3]*lf_y**3 + \
-        #             self.beta[2]*lf_y**2 + \
-        #             self.beta[1]*lf_y + hy_pred + self.beta[0]
-        #     else:
-        #         raise ValueError(
-        #             "The order of the low-fidelity model is not supported")
-
-        #     epistemic = epistemic * self.yh_std.numpy()
-        #     total_unc = total_unc * self.yh_std.numpy()
-        #     aleatoric = aleatoric * self.yh_std.numpy()
-
-        # return y, epistemic, total_unc, aleatoric
 
     def predict_lf(self, X: torch.Tensor,
                    output_format: str = "torch") -> torch.Tensor | np.ndarray:
@@ -463,7 +345,7 @@ class DNNLinearRegressionBNN:
         """
         x_scaled = self.normalize_inputs(X)
         # get the low-fidelity model prediction
-        lf_y_scaled = self.lf_model.forward(x_scaled)
+        lf_y_scaled = self.lf_model.best_net.forward(x_scaled)
         # scale back to the original scale
         lf_y = lf_y_scaled * self.yl_std + self.yl_mean
 
@@ -573,7 +455,7 @@ class DNNLinearRegressionBNN:
                     optimum_value = optRes.fun
                     beta = optRes.x
             beta_all[:, i] = beta
-            # PRINT THE OPTIMIZED BETA
+
             print(f"Optimized beta for output {i}: {beta}")
 
         return beta_all
@@ -596,7 +478,8 @@ class DNNLinearRegressionBNN:
         # get the low-fidelity model prediction of the high-fidelity samples
         hf_responses = self.hf_responses.clone().detach().numpy()
         hf_responses = hf_responses[:, index]
-        lf_responses = self.predict_lf(self.hf_samples, output_format="numpy")
+        lf_responses = self.predict_lf(
+            self.hf_samples.clone(), output_format="numpy")
         lf_responses = lf_responses[:, index]
 
         beta = np.tile(beta, (hf_responses.shape[0], 1))
@@ -619,7 +502,7 @@ class DNNLinearRegressionBNN:
                 "The order of the low-fidelity model is not supported")
 
         # calculate the summation of the error
-        sum_error = np.mean(error**2)
+        sum_error = np.sum(error**2)
 
         return sum_error
 

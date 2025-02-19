@@ -219,6 +219,7 @@ class LFDNN(MLP):
         self.batch_size = batch_size
         self.data_split = data_split
         if self.data_split:
+            best_loss = 1e10
             X_train, X_test, y_train, y_test = train_test_split(
                 X, Y, test_size=test_portion, random_state=self.seed)
         else:
@@ -251,8 +252,13 @@ class LFDNN(MLP):
                 print("epoch: ", epoch + 1, "train loss: ", loss.item(),
                       "test loss: ",
                       self.loss(self.forward(X_test), y_test).item())
+                if self.loss(self.forward(X_test), y_test).item() < best_loss:
+                    best_loss = self.loss(self.forward(X_test), y_test).item()
+                    self.best_net = self.net
+
             elif (epoch+1) % print_iter == 0 and self.data_split is False:
                 print("epoch: ", epoch + 1, "train loss: ", loss.item())
+                self.best_net = self.net
 
     def _get_optimizer(self) -> Any:
         """get optimizer according names
